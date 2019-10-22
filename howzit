@@ -1,0 +1,528 @@
+#!/usr/bin/env ruby
+# encoding: utf-8
+#
+#  _                       _ _
+# | |                     (_) |
+# | |__   _____      _______| |_
+# | '_ \ / _ \ \ /\ / /_  / | __|
+# | | | | (_) \ V  V / / /| | |_
+# |_| |_|\___/ \_/\_/ /___|_|\__|
+VERSION = '1.0.1'
+
+require 'optparse'
+require 'shellwords'
+
+module BuildNotes
+  module StringUtils
+    # Just strip out color codes when requested
+    def uncolor
+      self.gsub(/\e\[[\d;]+m/,'')
+    end
+
+    # Adapted from https://github.com/pazdera/word_wrap/,
+    # copyright (c) 2014, 2015  Radek Pazdera
+    # Distributed under the MIT License
+    def wrap(width)
+      text = self.dup
+      width ||= 80
+      output = []
+      indent = ""
+
+      text.gsub!(/\t/,'  ')
+
+      text.lines do |line|
+        line.chomp! "\n"
+        if line.length > width
+          if line.uncolor =~ /^(\s*(?:[\+\-\*]|\d+\.) )/
+            indent = " "*$1.length
+          else
+            indent = ""
+          end
+          new_lines = line.split_line(width)
+
+          while new_lines.length > 1 && new_lines[1].length + indent.length > width
+            output.push new_lines[0]
+
+            new_lines = new_lines[1].split_line(width,indent)
+          end
+          output += [new_lines[0],indent + new_lines[1]]
+        else
+          output.push line
+        end
+      end
+      output.map { |s| s.rstrip! }
+      output.join("\n")
+    end
+
+    def wrap!(width)
+      replace(wrap(width))
+    end
+
+    def split_line(width,indent="")
+      line = self.dup
+      at = line.index /\s/
+      last_at = at
+
+      while at != nil && at < width
+        last_at = at
+        at = line.index /\s/, last_at + 1
+      end
+
+      if last_at == nil
+        [line]
+      else
+        [indent + line[0,last_at], line[last_at+1, line.length]]
+      end
+    end
+  end
+end
+
+class String
+  include BuildNotes::StringUtils
+end
+
+module BuildNotes
+  class NoteReader
+    # Test if a given executable exists on this system
+    def exec_available(cli)
+      if File.exists?(File.expand_path(cli))
+        File.executable?(File.expand_path(cli))
+      else
+        system "which #{cli}", :out => File::NULL
+      end
+    end
+    # If either mdless or mdcat are installed, use that for highlighting
+    # markdown
+    def which_highlighter
+      highlighters = ['mdless','mdcat']
+      highlighters.select! do |f|
+        if f
+          if f.strip =~ /[ |]/
+            f
+          else
+            system "which #{f}", :out => File::NULL
+          end
+        else
+          false
+        end
+      end
+      unless highlighters.length > 0
+        return nil
+      end
+      hl = highlighters.first
+      args = case hl
+      when 'mdless'
+        '--no-pager'
+      end
+
+      [hl,args].join(" ")
+    end
+
+    # When pagination is enabled, find the best (in my opinion) option,
+    # favoring environment settings
+    def which_pager
+      pagers = [ENV['GIT_PAGER'], ENV['PAGER'],
+                'bat', 'less', 'more', 'cat', 'pager']
+      pagers.select! do |f|
+        if f
+          if f.strip =~ /[ |]/
+            f
+          else
+            system "which #{f}", :out => File::NULL
+          end
+        else
+          false
+        end
+      end
+
+      pg = pagers.first
+      args = case pg
+      when 'more'
+      when 'less'
+        '-r'
+      when 'bat'
+        if @options[:highlight]
+          '--language Markdown --style plain'
+        else
+          '--style plain'
+        end
+      else
+        ''
+      end
+
+      [pg, args].join(" ")
+    end
+
+    # Paginate the output
+    def page(text, &callback)
+      read_io, write_io = IO.pipe
+
+      input = $stdin
+
+      pid = Kernel.fork do
+        write_io.close
+        input.reopen(read_io)
+        read_io.close
+
+        # Wait until we have input before we start the pager
+        IO.select [input]
+
+        pager = which_pager
+        begin
+          exec(pager)
+        rescue SystemCallError => e
+          @log.error(e)
+          exit 1
+        end
+      end
+
+      read_io.close
+      write_io.write(text)
+      write_io.close
+
+      _, status = Process.waitpid2(pid)
+      status.success?
+    end
+
+    # print output to terminal
+    def show(string,opts)
+      options = {
+        :color => true,
+        :highlight => false,
+        :paginate => false,
+        :wrap => 0
+      }
+
+      options.merge!(opts)
+
+      unless options[:color]
+        string = string.uncolor
+      end
+
+
+
+      pipes=''
+      if options[:highlight]
+        hl = which_highlighter
+        pipes = "|#{hl}" if hl
+      end
+
+      output = %x{echo #{Shellwords.escape(string)}#{pipes}}
+
+      unless options[:paginate]
+        if ENV['TERM_PROGRAM'] =~ /^iTerm/
+          output.gsub!(/==\[/,"\e]1337;SetMark\a==[")
+        end
+        $stdout.puts output
+      else
+        page(output)
+      end
+    end
+
+    # Create a buildnotes skeleton
+    def create_note
+      # First make sure there isn't already a buildnotes file
+      filename = find_note_file
+      if filename
+        printf "\e[1;33m#{filename}\e[1;37m exists and appears to be a build note, continue anyway \e[0;32m[y/\e[1;32mN\e[0;32m]\e[1;37m? \e[0m"
+        input = gets.chomp
+        unless input =~ /y/i
+          puts "Canceled"
+          Process.exit 0
+        end
+      end
+
+      title = File.basename(Dir.pwd)
+      printf "\e[1;37mProject name \e[0;32m[#{title}]\e[1;37m: \e[0m"
+      input = gets.chomp
+      title = input unless input.empty?
+
+      summary = ""
+      printf "\e[1;37mProject summary: \e[0m"
+      input = gets.chomp
+      summary = input unless input.empty?
+
+      ext = "md"
+      printf "\e[1;37mChoose build notes file extension \e[0;32m[md]\e[1;37m: \e[0m"
+      input = gets.chomp
+      ext = input unless input.empty?
+
+      note =<<EOBUILDNOTES
+# #{title}
+
+#{summary}
+
+## File Structure
+
+Where are the main editable files? Is there a dist/build folder that should be ignored?
+
+## Build
+
+What build system/parameters does this use?
+
+@run(./build command)
+
+## Deploy
+
+What are the procedures/commands to deploy this project?
+
+## Other
+
+Version control notes, additional gulp/rake/make/etc tasks...
+
+EOBUILDNOTES
+
+      note_file = "buildnotes.#{ext}"
+
+      if File.exists?(note_file)
+        printf "\e[1;37mAre you absolutely sure you want to overwrite \e[1;33m#{filename} \e[0;32m[y/\e[1;32mN\e[0;32m]\e[1;37m? \e[0m"
+        input = gets.chomp
+        unless input =~ /y/i
+          puts "Canceled"
+          Process.exit 0
+        end
+      end
+
+      File.open(note_file,'w') do |f|
+        f.puts note
+        puts "Build notes for #{title} written to #{note_file}"
+      end
+    end
+
+    # Make a fancy title line for the section
+    def format_header(title)
+      cols = `tput cols`.strip.to_i
+      if @options[:wrap] > 0 && cols > @options[:wrap]
+        cols = @options[:wrap]
+      end
+      title = "──( \e[1;32m#{title}\e[0m )"
+      tail = "─"*(cols - title.length + 11)
+      "#{title}#{tail}"
+    end
+
+    # Output a section with fancy title and bright white text.
+    def output_section(sects,key,run)
+      output = []
+      if run
+        os = RbConfig::CONFIG['target_os']
+        if sects[key] =~ /@(run|copy|open|url)\((.*?)\)/i
+          sects[key].scan(/@(run|copy|open|url)\((.*?)\)/i).each {|c|
+            cmd = c[0]
+            obj = c[1]
+            case cmd
+            when /run/i
+              $stderr.puts "\e[1;32mRunning \e[3;37m#{obj}\e[0m"
+              puts %x{#{obj}}
+            when /copy/i
+              $stderr.puts "\e[1;32mCopied \e[3;37m#{obj}\e[1;32m to clipboard\e[0m"
+              %x{echo #{Shellwords.escape(obj)}'\\c'|pbcopy}
+            when /open|url/i
+              $stderr.print "\e[1;32mOpening \e[3;37m#{obj}"
+              case os
+              when /darwin.*/i
+                $stderr.puts " (macOS)\e[0m"
+                %x{open #{Shellwords.escape(obj)}}
+              when /mingw|mswin/i
+                $stderr.puts " (Windows)\e[0m"
+                %x{start #{Shellwords.escape(obj)}}
+              else
+                if exec_available('xdg-open')
+                  $stderr.puts " (Linux)\e[0m"
+                  %x{xdg-open #{Shellwords.escape(obj)}}
+                else
+                  $stderr.puts "Unable to determine executable for `open`."
+                end
+              end
+            end
+          }
+
+        else
+          $stderr.puts "\e[0;31m--run: No \e[1;31m@directive\e[0;31;40m found in \e[1;37m#{key}\e[0m"
+        end
+      else
+        output.push(format_header(key))
+        output.push("")
+        sects[key].strip.split(/\n/).each {|l|
+          if l =~ /@(run|copy|open|url)\((.*?)\)/
+            cmd = $1
+            obj = $2
+            icon = case cmd
+            when 'run'
+              "\u{25B6}"
+            when 'copy'
+              "\u{271A}"
+            when /open|url/
+              "\u{279A}"
+            end
+            output.push("\e[1;35;40m#{icon} \e[3;37;40m#{obj}\e[0m")
+          else
+            if @options[:wrap] > 0
+              l.wrap!(@options[:wrap])
+            end
+            output.push(l)
+          end
+          # puts "\e[1;37m" + l + "\e[0m"
+        }
+        output.push("")
+      end
+      return output.join("\n")
+    end
+
+    # Output a list of section titles
+    def list_sections(sects)
+      output = []
+      output.push("\e[1;32mSections:\e[0m\n")
+      sects.keys.each do |title|
+        output.push("- \e[1;37m#{title}\e[0m")
+      end
+      return output.join("\n")
+    end
+
+    # Read in the build notes file and output a hash of "Title" => contents
+    def read_help(filename)
+      help = IO.read(filename)
+      sections = {}
+      split = help.split(/##+/)
+      split.slice!(0)
+      split.each {|sect|
+        if sect.strip.length == 0
+          next
+        end
+        lines = sect.split(/\n/)
+        title = lines.slice!(0).strip
+        sections[title] = lines.join("\n").strip
+      }
+      sections
+    end
+
+    def initialize(args)
+
+      @options = {
+        :run => false,
+        :list_sections => false,
+        :color => true,
+        :highlight => true,
+        :paginate => true,
+        :wrap => 80
+      }
+      optparse = OptionParser.new do|opts|
+        opts.banner = "Usage: #{__FILE__} [OPTIONS] [SECTION]"
+        opts.separator ""
+        opts.separator "Show build notes for the current project (buildnotes.md). Include a section name to see just that section, or no argument to display all."
+        opts.separator ""
+        opts.separator "Options:"
+
+        opts.on('-c', '--create', 'Create a skeleton build note in the current working directory') do |c|
+          create_note
+          Process.exit 1
+        end
+
+        opts.on( '-r', '--run', 'Execute @run, @open, or @copy command for given section') do |c|
+          @options[:run] = true
+        end
+
+        opts.on( '-l', '--list', 'List available sections') do |c|
+          @options[:list_sections] = true
+        end
+
+        opts.on( '--[no-]color', 'Colorize output (default on)' ) do |c|
+          @options[:color] = c
+          unless c
+            @options[:highlight] = false
+          end
+        end
+
+        opts.on( '--[no-]md-highlight', 'Highlight Markdown syntax (default on), requires mdless or mdcat') do |m|
+          if @options[:color]
+            @options[:highlight] = m
+          else
+            @options[:highlight] = false
+          end
+        end
+
+        opts.on( '--[no-]pager', 'Paginate output (default on)') do |p|
+          @options[:paginate] = p
+        end
+
+        opts.on( '-w', '--wrap COLUMNS', 'Wrap to specified width (default 80, 0 to disable)') do |w|
+          @options[:wrap] = w.to_i
+        end
+
+        opts.on( '-h', '--help', 'Display this screen' ) do
+          puts opts
+          Process.exit 0
+        end
+
+        opts.on( '-v', '--version', 'Display version number' ) do
+          puts "Howzit v#{VERSION}"
+          Process.exit 0
+        end
+      end
+      optparse.parse!
+
+      process(args)
+    end
+
+    def find_note_file
+      filename = nil
+      # Check for a build note file in the current folder. Filename must start
+      # with "build" and have an extension of txt, md, or markdown.
+      Dir.glob('*.{txt,md,markdown}').each {|f|
+        if f.downcase =~ /^build/
+          filename = f
+          break
+        end
+      }
+      filename
+    end
+
+    def process(args)
+      output = []
+      filename = find_note_file
+
+      unless filename
+        printf "No build notes file found, create one [Y/n]?"
+        res = gets.chomp
+        create_note if res =~ /^y?$/i
+        Process.exit 1
+      end
+
+      if @options[:list_sections]
+        out = list_sections(read_help(filename))
+        show(out, {:color => @options[:color],  :paginate => false, :highlight => false })
+        Process.exit(0)
+      end
+
+      sections = read_help(filename)
+
+      # If there are arguments use those to search for a matching section
+      match = nil
+      if ARGV.length > 0
+        search = ARGV.join(" ").downcase
+        sections.keys.each {|k|
+          if k.downcase =~ /#{search}/
+            match = k
+            break
+          end
+        }
+        unless match
+          output.push(%Q{\e[0;31mERROR: No section match found for \e[1;33m#{search}\e[0m\n})
+        end
+      end
+
+      if match
+        # If we found a match
+        output.push(output_section(sections,match,@options[:run]))
+      else
+        # If there's no argument or no match found, output all
+        sections.keys.each {|k|
+          output.push(output_section(sections,k,false))
+        }
+      end
+
+      show(output.join("\n"), @options)
+    end
+  end
+end
+
+BuildNotes::NoteReader.new(ARGV)
