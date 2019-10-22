@@ -8,9 +8,9 @@ Howzit is a simple, self-contained script (at least until I get stupid and make 
 
 ### Prerequisites
 
-- Ruby 2.4+
-
-It probably works on older Rubys, but is untested prior to 2.4.1.
+- Ruby 2.4+ (It probably works on older Rubys, but is untested prior to 2.4.1.)
+- Optional: if [`bat`](https://github.com/sharkdp/bat) is available it will page with that
+- Optional: [`mdless`](https://github.com/ttscoff/mdless) or [`mdcat`](https://github.com/lunaryorn/mdcat) for formatting output
 
 ### Installing
 
@@ -97,8 +97,15 @@ Options:
     -w, --wrap COLUMNS               Wrap to specified width (default 80, 0 to disable)
     -h, --help                       Display this screen
     -v, --version                    Display version number
-
 ```
+
+## Additional Features
+
+- Match section titles with any portion of title
+- Automatic pagination of output, with optional Markdown highlighting
+- Wrap output with option (`-w COLUMNS`) to specify width (default 80, 0 to disable)
+- Use `@run()`, `@copy()`, and `@open()` to perform actions within a build notes file
+- Set iTerm 2 marks on section titles for navigation when paging is disabled
 
 ## Author
 
