@@ -22,7 +22,7 @@ Save the script as `howzit` to a folder in your $PATH and make it executable wit
 
 ### Setup
 
-Howzit relies on there being a file in the current directory with a name that starts with "build" and an extension of `.md`, `.txt`, or `.markdown`. This note contains sections such as "Build" and "Deploy" with brief notes about each topic in Markdown (or just plain text) format.
+Howzit relies on there being a file in the current directory with a name that starts with "build" and an extension of `.md`, `.txt`, or `.markdown`, e.g. `buildnotes.md`. This note contains sections such as "Build" and "Deploy" with brief notes about each topic in Markdown (or just plain text) format.
 
 The sections of the notes are delineated by Markdown headings, level 2 or higher, with the heading being the title of the section. I split all of mine apart with h2s. For example, a short one from the little website I was working on yesterday:
 
@@ -59,10 +59,10 @@ You can include commands that can be executed by howzit. Commands start at the b
 - `@run(COMMAND)`
     
     The command in parenthesis will be executed as is from the current directory of the shell
-- `@copy(TEXT TO COPY)`
+- `@copy(TEXT)`
 
     On macOS this will copy the text within the parenthesis to the clipboard. An easy way to offer a shortcut to a longer build command while still allowing it to be edited prior to execution.
-- `@open(FILE OR URL)`
+- `@open(FILE|URL)`
     
     Will open the file or URL using the default application for the filetype. On macOS this uses the `open` command, on Windows it uses `start`, and on Linux it uses `xdg-open`, which may require separate installation.
 
