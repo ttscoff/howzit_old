@@ -221,6 +221,10 @@ module BuildNotes
 
     # Create a buildnotes skeleton
     def create_note
+      trap("SIGINT") {
+        $stderr.puts "\nCancelled"
+        exit!
+      }
       # First make sure there isn't already a buildnotes file
       filename = find_note_file
       if filename
@@ -481,9 +485,18 @@ EOBUILDNOTES
       filename = find_note_file
 
       unless filename
-        printf "No build notes file found, create one [Y/n]?"
-        res = gets.chomp
-        create_note if res =~ /^y?$/i
+        if ARGV.length
+          ARGV.length.times do
+            ARGV.shift
+          end
+        end
+        system 'stty cbreak'
+        $stdout.syswrite "No build notes file found, create one [Y/n]? "
+        res = $stdin.sysread 1
+        puts
+        system 'stty cooked'
+        # res = gets.chomp
+        create_note if res.chomp =~ /^y?$/i
         Process.exit 1
       end
 
