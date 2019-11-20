@@ -211,7 +211,7 @@ module BuildNotes
 
       unless options[:paginate]
         if ENV['TERM_PROGRAM'] =~ /^iTerm/
-          output.gsub!(/==\[/,"\e]1337;SetMark\a==[")
+          output.gsub!(/──\(/,"\e]1337;SetMark\a──(")
         end
         $stdout.puts output
       else
@@ -222,15 +222,20 @@ module BuildNotes
     # Create a buildnotes skeleton
     def create_note
       trap("SIGINT") {
-        $stderr.puts "\nCancelled"
+        $stderr.puts "\nCanceled"
         exit!
       }
       # First make sure there isn't already a buildnotes file
       filename = find_note_file
       if filename
-        printf "\e[1;33m#{filename}\e[1;37m exists and appears to be a build note, continue anyway \e[0;32m[y/\e[1;32mN\e[0;32m]\e[1;37m? \e[0m"
-        input = gets.chomp
-        unless input =~ /y/i
+        system 'stty cbreak'
+        $stdout.syswrite "\e[1;33m#{filename}\e[1;37m exists and appears to be a build note, continue anyway \e[0;32m[y/\e[1;32mN\e[0;32m]\e[1;37m? \e[0m"
+        res = $stdin.sysread 1
+        res.chomp!
+        puts
+        system 'stty cooked'
+
+        unless res =~ /y/i
           puts "Canceled"
           Process.exit 0
         end
@@ -279,9 +284,14 @@ EOBUILDNOTES
       note_file = "buildnotes.#{ext}"
 
       if File.exists?(note_file)
-        printf "\e[1;37mAre you absolutely sure you want to overwrite \e[1;33m#{filename} \e[0;32m[y/\e[1;32mN\e[0;32m]\e[1;37m? \e[0m"
-        input = gets.chomp
-        unless input =~ /y/i
+        system 'stty cbreak'
+        $stdout.syswrite "\e[1;37mAre you absolutely sure you want to overwrite \e[1;33m#{filename} \e[0;32m[y/\e[1;32mN\e[0;32m]\e[1;37m? \e[0m"
+        res = $stdin.sysread 1
+        res.chomp!
+        puts
+        system 'stty cooked'
+
+        unless res =~ /y/i
           puts "Canceled"
           Process.exit 0
         end
@@ -382,6 +392,47 @@ EOBUILDNOTES
       return output.join("\n")
     end
 
+    # Output a list of section titles for shell completion
+    def list_section_titles(sects)
+      return sects.keys.join("\n")
+    end
+
+    def list_runnable_titles(sects)
+      output = []
+      sects.each do |title,sect|
+        runnable = false
+        sect.split(/\n/).each {|l|
+          if l =~ /@(run|copy|open|url)\((.*?)\)/
+            runnable = true
+            break
+          end
+        }
+        if runnable
+          output.push(title)
+        end
+      end
+      return output.join("\n")
+    end
+
+    def list_runnable(sects)
+      output = []
+      output.push(%Q{\e[1;32m"Runnable" Sections:\e[0m\n})
+      sects.each do |title,sect|
+        s_out = []
+        lines = sect.split(/\n/)
+        lines.each {|l|
+          if l =~ /@(run|copy|open|url)\((.*?)\)/
+            s_out.push("    * #{$1}: #{$2}")
+          end
+        }
+        if s_out.length > 0
+          output.push("- \e[1;37m#{title}\e[0m")
+          output.push(s_out.join("\n"))
+        end
+      end
+      return output.join("\n")
+    end
+
     # Read in the build notes file and output a hash of "Title" => contents
     def read_help(filename)
       help = IO.read(filename)
@@ -404,6 +455,9 @@ EOBUILDNOTES
       @options = {
         :run => false,
         :list_sections => false,
+        :list_section_titles => false,
+        :list_runnable => false,
+        :list_runnable_titles => false,
         :color => true,
         :highlight => true,
         :paginate => true,
@@ -421,12 +475,26 @@ EOBUILDNOTES
           Process.exit 1
         end
 
-        opts.on( '-r', '--run', 'Execute @run, @open, or @copy command for given section') do |c|
+        opts.on('-R', '--list-runnable', 'List sections (verbose) with @ directives in them') do |c|
+          @options[:list_runnable] = true
+        end
+
+        opts.on('-T', '--list-runnable-titles', 'List sections (titles only) with @ directives') do |c|
+          @options[:list_runnable] = true
+          @options[:list_runnable_titles] = true
+        end
+
+        opts.on( '-r', '--run', 'Execute @run, @open, and/or @copy commands for given section') do |c|
           @options[:run] = true
         end
 
         opts.on( '-l', '--list', 'List available sections') do |c|
           @options[:list_sections] = true
+        end
+
+        opts.on( '-L', '--list-completions', 'List sections for completion') do |c|
+          @options[:list_sections] = true
+          @options[:list_section_titles] = true
         end
 
         opts.on( '--[no-]color', 'Colorize output (default on)' ) do |c|
@@ -500,9 +568,24 @@ EOBUILDNOTES
         Process.exit 1
       end
 
+      if @options[:list_runnable]
+        if @options[:list_runnable_titles]
+          out = list_runnable_titles(read_help(filename))
+          $stdout.print(out.strip)
+        else
+          out = list_runnable(read_help(filename))
+          show(out, {:color => @options[:color],  :paginate => false, :highlight => false })
+        end
+        Process.exit(0)
+      end
+
       if @options[:list_sections]
-        out = list_sections(read_help(filename))
-        show(out, {:color => @options[:color],  :paginate => false, :highlight => false })
+        if @options[:list_section_titles]
+          $stdout.print(list_section_titles(read_help(filename)))
+        else
+          out = list_sections(read_help(filename))
+          show(out, {:color => @options[:color],  :paginate => false, :highlight => false })
+        end
         Process.exit(0)
       end
 

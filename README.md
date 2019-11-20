@@ -89,8 +89,11 @@ Usage: howzit [OPTIONS] [SECTION]
 
 Options:
     -c, --create                     Create a skeleton build note in the current working directory
-    -r, --run                        Execute @run, @open, or @copy command for given section
+    -R, --list-runnable              List sections (verbose) with @ directives in them
+    -T, --list-runnable-titles       List sections (titles only) with @ directives
+    -r, --run                        Execute @run, @open, and/or @copy commands for given section
     -l, --list                       List available sections
+    -L, --list-completions           List sections for completion
         --[no-]color                 Colorize output (default on)
         --[no-]md-highlight          Highlight Markdown syntax (default on), requires mdless or mdcat
         --[no-]pager                 Paginate output (default on)
@@ -106,6 +109,12 @@ Options:
 - Wrap output with option (`-w COLUMNS`) to specify width (default 80, 0 to disable)
 - Use `@run()`, `@copy()`, and `@open()` to perform actions within a build notes file
 - Set iTerm 2 marks on section titles for navigation when paging is disabled
+
+## Shell Integration
+
+I personally like to alias `bld` to `howzit -r`. If you define a function in your shell, you can have it default to "build" but accept an alternate argument. There's an example for Fish included, and in Bash it would be as simple as `howzit -r ${1:build}`.
+
+For completion you can use `howzit -L` to list all sections, and `howzit -T` to list all "runnable" sections (sections containing an @directive). Completion examples for Fish are included in the `fish` directory.
 
 ## Author
 
