@@ -7,7 +7,7 @@
 # | '_ \ / _ \ \ /\ / /_  / | __|
 # | | | | (_) \ V  V / / /| | |_
 # |_| |_|\___/ \_/\_/ /___|_|\__|
-VERSION = '1.1.0'
+VERSION = '1.1.1'
 
 require 'optparse'
 require 'shellwords'
@@ -69,10 +69,9 @@ module BuildNotes
       end
 
       if last_at == nil
-        [line]
-      else
-        [indent + line[0,last_at], line[last_at+1, line.length]]
+        last_at = width
       end
+      [indent + line[0,last_at], line[last_at+1, line.length]]
     end
   end
 end
@@ -475,26 +474,26 @@ EOBUILDNOTES
           Process.exit 1
         end
 
-        opts.on('-R', '--list-runnable', 'List sections (verbose) with @ directives in them') do |c|
+        opts.on('-R', '--list-runnable', 'List sections containing @ directives (verbose)') do |c|
           @options[:list_runnable] = true
         end
 
-        opts.on('-T', '--list-runnable-titles', 'List sections (titles only) with @ directives') do |c|
+        opts.on('-T', '--task-list', 'List sections containing @ directives (completion-compatible)') do |c|
           @options[:list_runnable] = true
           @options[:list_runnable_titles] = true
         end
 
-        opts.on( '-r', '--run', 'Execute @run, @open, and/or @copy commands for given section') do |c|
-          @options[:run] = true
+        opts.on( '-L', '--list-completions', 'List sections for completion') do |c|
+          @options[:list_sections] = true
+          @options[:list_section_titles] = true
         end
 
         opts.on( '-l', '--list', 'List available sections') do |c|
           @options[:list_sections] = true
         end
 
-        opts.on( '-L', '--list-completions', 'List sections for completion') do |c|
-          @options[:list_sections] = true
-          @options[:list_section_titles] = true
+        opts.on( '-r', '--run', 'Execute @run, @open, and/or @copy commands for given section') do |c|
+          @options[:run] = true
         end
 
         opts.on( '--[no-]color', 'Colorize output (default on)' ) do |c|
