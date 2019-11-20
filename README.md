@@ -89,11 +89,11 @@ Usage: howzit [OPTIONS] [SECTION]
 
 Options:
     -c, --create                     Create a skeleton build note in the current working directory
-    -R, --list-runnable              List sections (verbose) with @ directives in them
-    -T, --list-runnable-titles       List sections (titles only) with @ directives
-    -r, --run                        Execute @run, @open, and/or @copy commands for given section
-    -l, --list                       List available sections
+    -R, --list-runnable              List sections containing @ directives (verbose)
+    -T, --task-list                  List sections containing @ directives (completion-compatible)
     -L, --list-completions           List sections for completion
+    -l, --list                       List available sections
+    -r, --run                        Execute @run, @open, and/or @copy commands for given section
         --[no-]color                 Colorize output (default on)
         --[no-]md-highlight          Highlight Markdown syntax (default on), requires mdless or mdcat
         --[no-]pager                 Paginate output (default on)
