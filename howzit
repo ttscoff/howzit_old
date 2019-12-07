@@ -534,7 +534,7 @@ EOBUILDNOTES
       process(args)
     end
 
-    def find_note_file
+    def glob_note
       filename = nil
       # Check for a build note file in the current folder. Filename must start
       # with "build" and have an extension of txt, md, or markdown.
@@ -544,6 +544,17 @@ EOBUILDNOTES
           break
         end
       }
+      filename
+    end
+
+    def find_note_file
+      filename = glob_note
+
+      if filename.nil? && exec_available('git')
+        proj_dir = %x{git rev-parse --show-toplevel}.strip
+        Dir.chdir(proj_dir)
+        filename = glob_note
+      end
       filename
     end
 
