@@ -552,9 +552,11 @@ EOBUILDNOTES
       filename = glob_note
 
       if filename.nil? && exec_available('git')
-        proj_dir = %x{git rev-parse --show-toplevel}.strip
-        Dir.chdir(proj_dir)
-        filename = glob_note
+        proj_dir = %x{git rev-parse --show-toplevel 2>/dev/null}.strip
+        unless proj_dir == ""
+          Dir.chdir(proj_dir)
+          filename = glob_note
+        end
       end
       filename
     end
