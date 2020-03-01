@@ -7,7 +7,7 @@
 # | '_ \ / _ \ \ /\ / /_  / | __|
 # | | | | (_) \ V  V / / /| | |_
 # |_| |_|\___/ \_/\_/ /___|_|\__|
-VERSION = '1.1.3'
+VERSION = '1.1.4'
 
 require 'optparse'
 require 'shellwords'
@@ -125,6 +125,7 @@ module BuildNotes
                 'bat', 'less', 'more', 'cat', 'pager']
       pagers.select! do |f|
         if f
+          next if f.strip.empty?
           if f.strip =~ /[ |]/
             f
           else
@@ -602,6 +603,10 @@ EOBUILDNOTES
       filename = find_note_file
 
       unless filename
+        if @options[:list_runnable_titles] || @options[:list_section_titles]
+          Process.exit 0
+        end
+        # clear the buffer
         if ARGV.length
           ARGV.length.times do
             ARGV.shift
@@ -612,7 +617,7 @@ EOBUILDNOTES
         res = $stdin.sysread 1
         puts
         system 'stty cooked'
-        # res = gets.chomp
+
         create_note if res.chomp =~ /^y?$/i
         Process.exit 1
       end
@@ -641,21 +646,23 @@ EOBUILDNOTES
       sections = read_help(filename)
 
       # If there are arguments use those to search for a matching section
-      matches = []
+      match = nil
       if ARGV.length > 0
+        matches = []
         search = ARGV.join(" ").downcase
         sections.keys.each {|k|
           if k.downcase =~ /#{search}/
             matches.push(k)
           end
         }
-      end
-      if matches.length == 0
-        output.push(%Q{\e[0;31mERROR: No section match found for \e[1;33m#{search}\e[0m\n})
-      elsif matches.length == 1
-        match = matches[0]
-      else
-        match = choose(matches)
+
+        if matches.length == 0
+          output.push(%Q{\e[0;31mERROR: No section match found for \e[1;33m#{search}\e[0m\n})
+        elsif matches.length == 1
+          match = matches[0]
+        else
+          match = choose(matches)
+        end
       end
 
       if match
