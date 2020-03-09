@@ -7,7 +7,7 @@
 # | '_ \ / _ \ \ /\ / /_  / | __|
 # | | | | (_) \ V  V / / /| | |_
 # |_| |_|\___/ \_/\_/ /___|_|\__|
-VERSION = '1.1.5'
+VERSION = '1.1.6'
 
 require 'optparse'
 require 'shellwords'
@@ -57,6 +57,17 @@ module BuildNotes
 
     def wrap!(width)
       replace(wrap(width))
+    end
+
+    # Truncate string to nearest word
+    # @param len <number> max length of string
+    def trunc(len)
+      s = self.split(/ /).each_with_object("") {|x,ob| break ob unless (ob.length + " ".length + x.length <= len);ob << (" " + x)}.strip
+      s.gsub(/[^a-z0-9\- ]+/i,'')
+    end
+
+    def trunc!(len)
+      replace self.trunc(len)
     end
 
     def split_line(width,indent="")
@@ -186,7 +197,7 @@ module BuildNotes
     end
 
     # print output to terminal
-    def show(string,opts)
+    def show(string,opts={})
       options = {
         :color => true,
         :highlight => false,
@@ -199,8 +210,6 @@ module BuildNotes
       unless options[:color]
         string = string.uncolor
       end
-
-
 
       pipes=''
       if options[:highlight]
@@ -398,6 +407,19 @@ EOBUILDNOTES
       return sects.keys.join("\n")
     end
 
+    def get_note_title(filename, truncate=0)
+      title = nil
+      help = IO.read(filename).strip
+      first_line = help.split(/\n/)[0]
+      if first_line.length > 0 && first_line !~ /^##+/
+        title = first_line.sub(/^#\s*/,'')
+      end
+      if title && truncate > 0
+        title.trunc!(truncate)
+      end
+      title ? title : "Notes"
+    end
+
     def list_runnable_titles(sects)
       output = []
       sects.each do |title,sect|
@@ -462,7 +484,9 @@ EOBUILDNOTES
         :color => true,
         :highlight => true,
         :paginate => true,
-        :wrap => 80
+        :wrap => 80,
+        :output_title => false,
+        :title_only => false
       }
       optparse = OptionParser.new do|opts|
         opts.banner = "Usage: #{__FILE__} [OPTIONS] [SECTION]"
@@ -478,6 +502,15 @@ EOBUILDNOTES
 
         opts.on('-R', '--list-runnable', 'List sections containing @ directives (verbose)') do |c|
           @options[:list_runnable] = true
+        end
+
+        opts.on('-t', '--title', 'Output title with build notes') do |c|
+          @options[:output_title] = true
+        end
+
+        opts.on('--title-only', 'Output title only') do |c|
+          @options[:output_title] = true
+          @options[:title_only] = true
         end
 
         opts.on('-T', '--task-list', 'List sections containing @ directives (completion-compatible)') do |c|
@@ -620,6 +653,17 @@ EOBUILDNOTES
 
         create_note if res.chomp =~ /^y?$/i
         Process.exit 1
+      end
+
+      if @options[:title_only]
+        out = get_note_title(filename, 20)
+        $stdout.print(out.strip)
+        Process.exit(0)
+      elsif @options[:output_title]
+        title = get_note_title(filename)
+        if title && !title.empty?
+          output.push("====( " + title + " )\n\n")
+        end
       end
 
       if @options[:list_runnable]
