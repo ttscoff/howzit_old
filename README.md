@@ -90,6 +90,8 @@ Usage: howzit [OPTIONS] [SECTION]
 Options:
     -c, --create                     Create a skeleton build note in the current working directory
     -R, --list-runnable              List sections containing @ directives (verbose)
+    -t, --title                      Output title with build notes
+        --title-only                 Output title only
     -T, --task-list                  List sections containing @ directives (completion-compatible)
     -L, --list-completions           List sections for completion
     -l, --list                       List available sections
