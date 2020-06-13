@@ -7,7 +7,7 @@
 # | '_ \ / _ \ \ /\ / /_  / | __|
 # | | | | (_) \ V  V / / /| | |_
 # |_| |_|\___/ \_/\_/ /___|_|\__|
-VERSION = '1.1.6'
+VERSION = '1.1.7'
 
 require 'optparse'
 require 'shellwords'
@@ -336,7 +336,7 @@ EOBUILDNOTES
             case cmd
             when /run/i
               $stderr.puts "\e[1;32mRunning \e[3;37m#{obj}\e[0m"
-              puts %x{#{obj}}
+              exec obj
             when /copy/i
               $stderr.puts "\e[1;32mCopied \e[3;37m#{obj}\e[1;32m to clipboard\e[0m"
               %x{echo #{Shellwords.escape(obj)}'\\c'|pbcopy}
