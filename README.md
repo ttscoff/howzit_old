@@ -66,6 +66,24 @@ You can include commands that can be executed by howzit. Commands start at the b
     
     Will open the file or URL using the default application for the filetype. On macOS this uses the `open` command, on Windows it uses `start`, and on Linux it uses `xdg-open`, which may require separate installation.
 
+### Run blocks (embedded scripts)
+
+For longer scripts you can write shell scripts and then call them with `@run(myscript.sh)`. For those in-between cases where you need a few commands but aren't motivated to create a separate file, you can use fenced code blocks with `run` as the language.
+
+The contents of the block will be written to a temporary file and executed with `/bin/sh -c`. This means that you need a hashbang at the beginning to tell the shell how to interpret the script. If no hashbang is given, the script will be executed as a `sh` script.
+
+Example:
+
+    ```run
+    #!/bin/bash
+    echo "Just needed a few lines"
+    echo "To get through all these commands"
+    echo "Almost there!"
+    say "Phew, we did it."
+    ```
+
+Multiple blocks can be included in a section. @commands take priority over code blocks and will be run first if they exist in the same section.
+
 ### Using howzit
 
 Run `howzit` on its own to view the current folder's buildnotes.
@@ -89,6 +107,7 @@ Usage: howzit [OPTIONS] [SECTION]
 
 Options:
     -c, --create                     Create a skeleton build note in the current working directory
+    -e, --edit                       Edit buildnotes file in current working directory using $EDITOR
     -R, --list-runnable              List sections containing @ directives (verbose)
     -t, --title                      Output title with build notes
         --title-only                 Output title only
@@ -106,17 +125,18 @@ Options:
 
 ## Additional Features
 
-- Match section titles with any portion of title
+- Match section titles with any portion of title (non-fuzzy)
 - Automatic pagination of output, with optional Markdown highlighting
 - Wrap output with option (`-w COLUMNS`) to specify width (default 80, 0 to disable)
 - Use `@run()`, `@copy()`, and `@open()` to perform actions within a build notes file
+- Use fenced code blocks to include/run embedded scripts (see below)
 - Set iTerm 2 marks on section titles for navigation when paging is disabled
 
 ## Shell Integration
 
 I personally like to alias `bld` to `howzit -r`. If you define a function in your shell, you can have it default to "build" but accept an alternate argument. There's an example for Fish included, and in Bash it would be as simple as `howzit -r ${1:build}`.
 
-For completion you can use `howzit -L` to list all sections, and `howzit -T` to list all "runnable" sections (sections containing an @directive). Completion examples for Fish are included in the `fish` directory.
+For completion you can use `howzit -L` to list all sections, and `howzit -T` to list all "runnable" sections (sections containing an @directive or run block). Completion examples for Fish are included in the `fish` directory.
 
 ## Author
 
