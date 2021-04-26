@@ -7,7 +7,7 @@
 # | '_ \ / _ \ \ /\ / /_  / | __|
 # | | | | (_) \ V  V / / /| | |_
 # |_| |_|\___/ \_/\_/ /___|_|\__|
-VERSION = '1.1.7'
+VERSION = '1.1.8'
 
 require 'optparse'
 require 'shellwords'
@@ -500,6 +500,11 @@ EOBUILDNOTES
           Process.exit 1
         end
 
+        opts.on('-e', '--edit', "Edit buildnotes file in current working directory using #{ENV['EDITOR']}") do |c|
+          edit_note
+          Process.exit 1
+        end
+
         opts.on('-R', '--list-runnable', 'List sections containing @ directives (verbose)') do |c|
           @options[:list_runnable] = true
         end
@@ -567,6 +572,23 @@ EOBUILDNOTES
       optparse.parse!
 
       process(args)
+    end
+
+    def edit_note
+      raise "No EDITOR variable defined in environment" if ENV['EDITOR'].nil?
+      filename = find_note_file
+      if filename.nil?
+        system 'stty cbreak'
+        $stdout.syswrite "No build notes file found, create one [Y/n]? "
+        res = $stdin.sysread 1
+        puts
+        system 'stty cooked'
+
+        create_note if res.chomp =~ /^y?$/i
+        edit_note
+      else
+        `#{ENV['EDITOR']} "#{filename}"`
+      end
     end
 
     def glob_note
