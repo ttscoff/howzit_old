@@ -7,7 +7,7 @@
 # | '_ \ / _ \ \ /\ / /_  / | __|
 # | | | | (_) \ V  V / / /| | |_
 # |_| |_|\___/ \_/\_/ /___|_|\__|
-VERSION = '1.1.10'
+VERSION = '1.1.11'
 
 require 'optparse'
 require 'shellwords'
@@ -354,13 +354,22 @@ EOBUILDNOTES
       if run
         os = RbConfig::CONFIG['target_os']
         tasks = 0
-        if sects[key] =~ /(@(run|copy|open|url)\((.*?)\)|`{3,}run)/i
-          directives = sects[key].scan(/@(run|copy|open|url)\((.*?)\)/i)
+        if sects[key] =~ /(@(include|run|copy|open|url)\((.*?)\)|`{3,}run)/i
+          directives = sects[key].scan(/@(include|run|copy|open|url)\((.*?)\)/i)
           tasks += directives.length
           directives.each {|c|
             cmd = c[0]
             obj = c[1]
             case cmd
+            when /include/i
+              matches = match_section(sects, obj)
+              if matches.length == 0
+                warn "No section match for @include(#{search})"
+              else
+                warn "\e[1;33mIncluding tasks from \e[3;37m#{matches[0]}\e[0m"
+                output_section(sects, matches[0], true)
+                warn "\e[1;33mEnd include \e[3;37m#{matches[0]}\e[0m"
+              end
             when /run/i
               warn "\e[1;32mRunning \e[3;37m#{obj}\e[0m"
               system(obj)
@@ -388,10 +397,12 @@ EOBUILDNOTES
             end
           }
 
-          blocks = sects[key].scan(/(`{3,})run(.*?)\1/mi)
+          blocks = sects[key].scan(/(`{3,})run(?: +([^\n]+))?(.*?)\1/mi)
           tasks += blocks.length
           blocks.each {|c|
-            block = c[1].strip
+            title = c[1] ? c[1].strip : ''
+            warn "\e[1;32mRunning block \e[3;37m#{title}\e[0m"
+            block = c[2].strip
             script = Tempfile.new('howzit_script')
             begin
               script.write(block)
@@ -520,6 +531,17 @@ EOBUILDNOTES
         sections[title] = lines.join("\n").strip
       }
       sections
+    end
+
+    def match_section(sections, search)
+      matches = []
+      search = search.split(//).join('.*?')
+      sections.keys.each {|k|
+        if k.downcase =~ /#{search}/i
+          matches.push(k)
+        end
+      }
+      matches
     end
 
     def initialize(args)
@@ -791,13 +813,9 @@ EOBUILDNOTES
       # If there are arguments use those to search for a matching section
       match = nil
       if ARGV.length > 0
-        matches = []
-        search = ARGV.join(" ").downcase
-        sections.keys.each {|k|
-          if k.downcase =~ /#{search}/
-            matches.push(k)
-          end
-        }
+
+        search = ARGV.join(' ').downcase
+        matches = match_section(sections, search)
 
         if matches.length == 0
           output.push(%Q{\e[0;31mERROR: No section match found for \e[1;33m#{search}\e[0m\n})

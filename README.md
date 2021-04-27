@@ -2,6 +2,18 @@
 
 A command-line reference tool for tracking project build systems
 
+Howzit is a tool that allows you to keep Markdown-formatted notes about a project's tools and procedures. It functions as an easy lookup for notes about a particular task, as well as a task runner to automatically execute appropriate commands.
+
+## Features
+
+- Match section titles with any portion of title (fuzzy matching)
+- Automatic pagination of output, with optional Markdown highlighting
+- Wrap output with option (`-w COLUMNS`) to specify width (default 80, 0 to disable)
+- Use `@run()`, `@copy()`, and `@open()` to perform actions within a build notes file
+- Use `@include()` to import another section's tasks
+- Use fenced code blocks to include/run embedded scripts
+- Set iTerm 2 marks on section titles for navigation when paging is disabled
+
 ## Getting Started
 
 Howzit is a simple, self-contained script (at least until I get stupid and make a gem out of it).
@@ -65,16 +77,24 @@ You can include commands that can be executed by howzit. Commands start at the b
 - `@open(FILE|URL)`
     
     Will open the file or URL using the default application for the filetype. On macOS this uses the `open` command, on Windows it uses `start`, and on Linux it uses `xdg-open`, which may require separate installation.
+- `@include(SECTION)`
+
+    Includes all tasks from another section, fuzzy matching the name and returning first match.
 
 ### Run blocks (embedded scripts)
 
 For longer scripts you can write shell scripts and then call them with `@run(myscript.sh)`. For those in-between cases where you need a few commands but aren't motivated to create a separate file, you can use fenced code blocks with `run` as the language.
 
+    ```run OPTIONAL TITLE
+    #!/bin/bash
+    # Commands...
+    ```
+
 The contents of the block will be written to a temporary file and executed with `/bin/sh -c`. This means that you need a hashbang at the beginning to tell the shell how to interpret the script. If no hashbang is given, the script will be executed as a `sh` script.
 
 Example:
 
-    ```run
+    ```run Just Testing
     #!/bin/bash
     echo "Just needed a few lines"
     echo "To get through all these commands"
@@ -122,15 +142,6 @@ Options:
     -h, --help                       Display this screen
     -v, --version                    Display version number
 ```
-
-## Additional Features
-
-- Match section titles with any portion of title (non-fuzzy)
-- Automatic pagination of output, with optional Markdown highlighting
-- Wrap output with option (`-w COLUMNS`) to specify width (default 80, 0 to disable)
-- Use `@run()`, `@copy()`, and `@open()` to perform actions within a build notes file
-- Use fenced code blocks to include/run embedded scripts
-- Set iTerm 2 marks on section titles for navigation when paging is disabled
 
 ## Configuration
 
@@ -199,6 +210,11 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 - Recognize header hierarchy, allow showing/running all sub-sections
 
 ## Changelog
+
+### 1.1.11
+
+- Add full fuzzy matching for section titles
+- Add `@include(SECTION)` command to import another section's tasks
 
 ### 1.1.10
 
