@@ -12,7 +12,7 @@ What build system does this use? E.g. rake, make, gulp, etc.
 
 Commands in @directives can be triggered with `howzit -r`
 
-@run(gulp scripts)
+@run(vim buildnotes.md)
 
 ## Deploy
 

@@ -50,7 +50,7 @@ yarn
 - UIKit
 ```
 
-Howzit expects there to only be one header level used to split sections. Anything before the first header is ignored.
+Howzit expects there to only be one header level used to split sections. Anything before the first header is ignored. If your sections use h2 (`##`), you can use a single h1 (`#`) line at the top to title the project.
 
 ### @Commands
 
@@ -202,11 +202,40 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 
 ### 1.1.10
 
-- Add configuration file for default options
+- Add config file for default options
 
 ### 1.1.9
 
-- Executable code blocks
+- Use `system` instead of `exec` to allow multiple @run commands
+- Add code block runner
+
+### 1.1.8
+
+- Add `-e/--edit` flag to open build notes in $EDITOR
+
+### 1.1.7
+
+- Use `exec` for @run commands to allow interactive processes (e.g. vim)
+
+### 1.1.6
+
+- Add option for outputting title with notes
+- Add option for outputting note title only
+
+### 1.1.4
+
+- Fix for "Section not found" when run with no arguments
+
+### 1.1.1
+
+- Reorganize and rename long output options
+- Fix wrapping long lines without spaces
+
+### 1.1.0
+
+- Add -R switch for listing "runnable" sections
+- Add -T switch for completion-compatible listing of "runnable" sections
+- Add -L switch for completion-compatible listing of all sections
 
 ### 1.0.1
 
@@ -220,4 +249,3 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 - Offer to create skeleton buildnotes if none found
 - Set iTerm 2 marks for navigation when paging is disabled
 - Wrap output with option to specify width (default 80, 0 to disable)
-
