@@ -6,7 +6,7 @@ Howzit is a tool that allows you to keep Markdown-formatted notes about a projec
 
 ## Features
 
-- Match section titles with any portion of title (fuzzy matching)
+- Match section titles with any portion of title
 - Automatic pagination of output, with optional Markdown highlighting
 - Wrap output with option (`-w COLUMNS`) to specify width (default 80, 0 to disable)
 - Use `@run()`, `@copy()`, and `@open()` to perform actions within a build notes file
@@ -79,7 +79,7 @@ You can include commands that can be executed by howzit. Commands start at the b
     Will open the file or URL using the default application for the filetype. On macOS this uses the `open` command, on Windows it uses `start`, and on Linux it uses `xdg-open`, which may require separate installation.
 - `@include(SECTION)`
 
-    Includes all tasks from another section, fuzzy matching the name and returning first match.
+    Includes all tasks from another section, matching the name (partial match allowed) and returning first match.
 
 ### Run blocks (embedded scripts)
 
@@ -210,6 +210,10 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 - Recognize header hierarchy, allow showing/running all sub-sections
 
 ## Changelog
+
+### 1.1.12
+
+- After consideration, remove full fuzzy matching. Too many positives for shorter strings.
 
 ### 1.1.11
 

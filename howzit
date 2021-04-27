@@ -7,7 +7,7 @@
 # | '_ \ / _ \ \ /\ / /_  / | __|
 # | | | | (_) \ V  V / / /| | |_
 # |_| |_|\___/ \_/\_/ /___|_|\__|
-VERSION = '1.1.11'
+VERSION = '1.1.12'
 
 require 'optparse'
 require 'shellwords'
@@ -535,7 +535,7 @@ EOBUILDNOTES
 
     def match_section(sections, search)
       matches = []
-      search = search.split(//).join('.*?')
+      # search = search.split(//).join('.*?')
       sections.keys.each {|k|
         if k.downcase =~ /#{search}/i
           matches.push(k)
