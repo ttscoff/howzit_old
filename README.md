@@ -26,7 +26,7 @@ Howzit relies on there being a file in the current directory with a name that st
 
 The sections of the notes are delineated by Markdown headings, level 2 or higher, with the heading being the title of the section. I split all of mine apart with h2s. For example, a short one from the little website I was working on yesterday:
 
-```
+```markdown
 ## Build
 
 gulp js: compiles and minifies all js to dist/js/main.min.js
@@ -129,14 +129,62 @@ Options:
 - Automatic pagination of output, with optional Markdown highlighting
 - Wrap output with option (`-w COLUMNS`) to specify width (default 80, 0 to disable)
 - Use `@run()`, `@copy()`, and `@open()` to perform actions within a build notes file
-- Use fenced code blocks to include/run embedded scripts (see below)
+- Use fenced code blocks to include/run embedded scripts
 - Set iTerm 2 marks on section titles for navigation when paging is disabled
+
+## Configuration
+
+Some of the command line options can be set as defaults. The first time you run `howzit`, a YAML file is written to `~/.config/howzit/howzit.yaml`. It contains the available options:
+
+```yaml
+---
+:color: true
+:highlight: true
+:paginate: false
+:wrap: 80
+:output_title: false
+:highlighter: auto
+:pager: auto
+```
+
+Most are true/false. `:highlighter:` and `:pager:` can be set to `auto` (default) or a command of your choice for markdown highlighting and pagination.
+
+### Pagers
+
+If set to `auto`, howzit will look for pagers in this order, using the first one it finds available:
+
+- $GIT_PAGER
+- $PAGER
+- bat
+- less
+- more
+- cat
+- pager
+
+If you're defining your own, make sure to include any flags necessary to handle the output. If you're using howzit's coloring, for example, you need to specify any options needed for ANSI escape sequences (e.g. `less -r`).
+
+### Highlighters
+
+If set to `auto` howzit will look for markdown highlighters in this order, using the first it finds available:
+
+- mdless
+- mdcat
+
+If you're combining a highlighter with howzit's pagination, include any flags needed to disable the highlighter's pagination (e.g. `mdless --no-pager`).
 
 ## Shell Integration
 
 I personally like to alias `bld` to `howzit -r`. If you define a function in your shell, you can have it default to "build" but accept an alternate argument. There's an example for Fish included, and in Bash it would be as simple as `howzit -r ${1:build}`.
 
 For completion you can use `howzit -L` to list all sections, and `howzit -T` to list all "runnable" sections (sections containing an @directive or run block). Completion examples for Fish are included in the `fish` directory.
+
+## Similar Projects
+
+- [mask](https://github.com/jakedeichert/mask/)
+- [maid](https://github.com/egoist/maid)
+- [saku](https://github.com/kt3k/saku)
+
+There are a few projects that tackle the same concept (a Markdown makefile). Most of them are superior task runners, so if you're looking for a `make` replacement, I recommend exploring the links above. What I like about `howzit` (and what keeps me from switching) is that it's documentation-first, and that I can display the description for each section on the command line. The others also don't have options for listing sections or runnable tasks, so I can't use completion (or my cool script that adds available tasks to my Macbook Pro Touch Bar...). But no, I don't think `howzit` is as good an overall task runner as `mask` or `maid`.
 
 ## Author
 
@@ -146,7 +194,19 @@ For completion you can use `howzit -L` to list all sections, and `howzit -T` to 
 
 This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
 
+## Roadmap
+
+- Recognize header hierarchy, allow showing/running all sub-sections
+
 ## Changelog
+
+### 1.1.10
+
+- Add configuration file for default options
+
+### 1.1.9
+
+- Executable code blocks
 
 ### 1.0.1
 
@@ -160,3 +220,4 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 - Offer to create skeleton buildnotes if none found
 - Set iTerm 2 marks for navigation when paging is disabled
 - Wrap output with option to specify width (default 80, 0 to disable)
+

@@ -7,12 +7,13 @@
 # | '_ \ / _ \ \ /\ / /_  / | __|
 # | | | | (_) \ V  V / / /| | |_
 # |_| |_|\___/ \_/\_/ /___|_|\__|
-VERSION = '1.1.9'
+VERSION = '1.1.10'
 
 require 'optparse'
 require 'shellwords'
 require 'readline'
 require 'tempfile'
+require 'yaml'
 
 module BuildNotes
   module StringUtils
@@ -106,64 +107,86 @@ module BuildNotes
     # If either mdless or mdcat are installed, use that for highlighting
     # markdown
     def which_highlighter
-      highlighters = ['mdless','mdcat']
-      highlighters.select! do |f|
-        if f
-          if f.strip =~ /[ |]/
-            f
+      if @options[:highlighter] =~ /auto/i
+        highlighters = ['mdless','mdcat']
+        highlighters.select! do |f|
+          if f
+            if f.strip =~ /[ |]/
+              f
+            else
+              system "which #{f}", :out => File::NULL
+            end
           else
-            system "which #{f}", :out => File::NULL
+            false
           end
+        end
+        unless highlighters.length > 0
+          return nil
+        end
+        hl = highlighters.first
+        args = case hl
+        when 'mdless'
+          '--no-pager'
+        end
+
+        [hl,args].join(" ")
+      else
+        hl = @options[:highlighter].split(/ /)[0]
+        if system "which #{hl}", :out => File::NULL
+          @options[:highlighter]
         else
-          false
+          warn "Specified highlighter not found, switching to auto"
+          @options[:highlighter] = 'auto'
+          which_highlighter
         end
       end
-      unless highlighters.length > 0
-        return nil
-      end
-      hl = highlighters.first
-      args = case hl
-      when 'mdless'
-        '--no-pager'
-      end
-
-      [hl,args].join(" ")
     end
 
     # When pagination is enabled, find the best (in my opinion) option,
     # favoring environment settings
     def which_pager
-      pagers = [ENV['GIT_PAGER'], ENV['PAGER'],
-                'bat', 'less', 'more', 'cat', 'pager']
-      pagers.select! do |f|
-        if f
-          next if f.strip.empty?
-          if f.strip =~ /[ |]/
-            f
+      if @options[:pager] =~ /auto/i
+        pagers = [ENV['GIT_PAGER'], ENV['PAGER'],
+                  'bat', 'less', 'more', 'cat', 'pager']
+        pagers.select! do |f|
+          if f
+            next if f.strip.empty?
+            if f.strip =~ /[ |]/
+              f
+            else
+              system "which #{f}", :out => File::NULL
+            end
           else
-            system "which #{f}", :out => File::NULL
+            false
+          end
+        end
+
+        pg = pagers.first
+        args = case pg
+        when 'more'
+        when 'less'
+          '-r'
+        when 'bat'
+          if @options[:highlight]
+            '--language Markdown --style plain'
+          else
+            '--style plain'
           end
         else
-          false
+          ''
         end
-      end
 
-      pg = pagers.first
-      args = case pg
-      when 'more'
-      when 'less'
-        '-r'
-      when 'bat'
-        if @options[:highlight]
-          '--language Markdown --style plain'
-        else
-          '--style plain'
-        end
+        [pg, args].join(" ")
       else
-        ''
+        pg = @options[:pager].split(/ /)[0]
+        if system "which #{pg}", :out => File::NULL
+          @options[:pager]
+        else
+          warn "Specified pager not found, switching to auto"
+          @options[:pager] = 'auto'
+          which_pager
+        end
       end
-
-      [pg, args].join(" ")
     end
 
     # Paginate the output
@@ -500,20 +523,28 @@ EOBUILDNOTES
     end
 
     def initialize(args)
-
-      @options = {
+      flags = {
         :run => false,
         :list_sections => false,
         :list_section_titles => false,
         :list_runnable => false,
         :list_runnable_titles => false,
+        :title_only => false
+      }
+
+      defaults = {
         :color => true,
         :highlight => true,
         :paginate => true,
         :wrap => 80,
         :output_title => false,
-        :title_only => false
+        :highlighter => 'auto',
+        :pager => 'auto'
       }
+
+      config = load_config(defaults)
+      @options = flags.merge(config)
+
       optparse = OptionParser.new do|opts|
         opts.banner = "Usage: #{__FILE__} [OPTIONS] [SECTION]"
         opts.separator ""
@@ -677,6 +708,26 @@ EOBUILDNOTES
         system('stty', stty_save)
         exit
       end
+    end
+
+    def load_config(defaults)
+      config_dir = File.expand_path('~/.config/howzit')
+      config_file = File.join(config_dir,'howzit.yaml')
+
+      unless File.directory?(config_dir)
+        warn "Creating config directory at #{config_dir}"
+        FileUtils.mkdir_p(config_dir)
+      end
+
+      unless File.exists?(config_file)
+        warn "Writing fresh config file to #{config_file}"
+        File.open(config_file, 'w') {|f|
+          f.puts defaults.to_yaml
+        }
+      end
+
+      config = YAML.load(IO.read(config_file))
+      config ? defaults.merge(config) : defaults
     end
 
     def process(args)
