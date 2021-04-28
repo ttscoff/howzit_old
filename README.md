@@ -128,17 +128,19 @@ Usage: howzit [OPTIONS] [SECTION]
 Options:
     -c, --create                     Create a skeleton build note in the current working directory
     -e, --edit                       Edit buildnotes file in current working directory using $EDITOR
-    -R, --list-runnable              List sections containing @ directives (verbose)
-    -t, --title                      Output title with build notes
-        --title-only                 Output title only
-    -T, --task-list                  List sections containing @ directives (completion-compatible)
     -L, --list-completions           List sections for completion
     -l, --list                       List available sections
+    -m, --matching TYPE              Section matching: exact, partial (default), beginswith, or fuzzy
+    -R, --list-runnable              List sections containing @ directives (verbose)
     -r, --run                        Execute @run, @open, and/or @copy commands for given section
+    -T, --task-list                  List sections containing @ directives (completion-compatible)
+    -t, --title                      Output title with build notes
+    -w, --wrap COLUMNS               Wrap to specified width (default 80, 0 to disable)
+        --edit-config                Edit configuration file using $EDITOR
+        --title-only                 Output title only
         --[no-]color                 Colorize output (default on)
         --[no-]md-highlight          Highlight Markdown syntax (default on), requires mdless or mdcat
         --[no-]pager                 Paginate output (default on)
-    -w, --wrap COLUMNS               Wrap to specified width (default 80, 0 to disable)
     -h, --help                       Display this screen
     -v, --version                    Display version number
 ```
@@ -156,9 +158,40 @@ Some of the command line options can be set as defaults. The first time you run 
 :output_title: false
 :highlighter: auto
 :pager: auto
+:matching: partial
 ```
 
-Most are true/false. `:highlighter:` and `:pager:` can be set to `auto` (default) or a command of your choice for markdown highlighting and pagination.
+`:highlighter:` and `:pager:` can be set to `auto` (default) or a command of your choice for markdown highlighting and pagination.
+
+`:matching:` can be 'partial', 'beginswith', 'fuzzy' or 'exact' (see below).
+
+### Matching
+
+All matching is case insensitive. This setting can be overridden by the `--matching TYPE` flag on the command line.
+
+- `:matching: partial`
+
+    Partial is the default, search matches any part of the section title.
+
+    _Example:_ `howzit other` matches 'An<mark>other</mark> Section'.
+
+- ':matching: beginswith` 
+
+    Matches from the start of the title.
+
+    _Example:_ `howzit another` matches '<mark>Another</mark> Section', but neither 'other' or 'section' will.
+
+- `:matching: fuzzy` 
+
+    Matches anything containing the search characters in order, no matter what comes between them.
+
+    _Example:_ `howzit asct` matches '<mark>A</mark>nother <mark>S</mark>e<mark>c</mark><mark>t</mark>ion'
+
+- `:matching: exact` 
+
+    Case insensitive but must match the entire title.
+
+    _Example:_ Only `howzit another section` will match 'Another Section'
 
 ### Pagers
 
@@ -210,6 +243,12 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 - Recognize header hierarchy, allow showing/running all sub-sections
 
 ## Changelog
+
+### 1.1.13
+
+- --matching [fuzzy,beginswith,partial,exact] flag
+- --edit-config flag
+- sort flags in help
 
 ### 1.1.12
 
