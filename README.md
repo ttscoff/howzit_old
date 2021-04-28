@@ -266,6 +266,13 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 
 ## Changelog
 
+### 1.1.14
+
+- Fix removal of non-alphanumeric characters from titles
+- -s/--select option to display a menu of all available sections
+- Allow arguments to be passed after `--` for variable substitution
+- Allow --matching TYPE to match first non-ambigous keyword match
+
 ### 1.1.13
 
 - --matching [fuzzy,beginswith,partial,exact] flag

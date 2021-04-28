@@ -7,7 +7,7 @@
 # | '_ \ / _ \ \ /\ / /_  / | __|
 # | | | | (_) \ V  V / / /| | |_
 # |_| |_|\___/ \_/\_/ /___|_|\__|
-VERSION = '1.1.13'
+VERSION = '1.1.14'
 
 require 'optparse'
 require 'shellwords'
@@ -606,7 +606,7 @@ EOBUILDNOTES
         matching: 'partial' # exact, partial, fuzzy, beginswith
       }
 
-      parts = Shellwords.shelljoin(args).split(/--/)
+      parts = Shellwords.shelljoin(args).split(/ -- /)
       args = parts[0] ? Shellwords.shellsplit(parts[0]) : []
       @arguments = parts[1] ? Shellwords.shellsplit(parts[1]) : []
 
