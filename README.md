@@ -26,13 +26,11 @@ Howzit is a simple, self-contained script (at least until I get stupid and make 
 
 ### Installing
 
-Save the script as `howzit` to a folder in your $PATH and make it executable with:
+[Download the script](#dl) as `howzit` to a folder in your $PATH and make it executable with:
 
     chmod a+x howzit
 
-## Usage
-
-### Setup
+## Anatomy of a Build Notes File
 
 Howzit relies on there being a file in the current directory with a name that starts with "build" and an extension of `.md`, `.txt`, or `.markdown`, e.g. `buildnotes.md`. This note contains sections such as "Build" and "Deploy" with brief notes about each topic in Markdown (or just plain text) format.
 
@@ -104,7 +102,24 @@ Example:
 
 Multiple blocks can be included in a section. @commands take priority over code blocks and will be run first if they exist in the same section.
 
-### Using howzit
+### Variables
+
+When running commands in a section, you can use a double dash (`--`) in the command line (surrounded by spaces) and anything after it will be interpreted as shell arguments. These can be used in commands with `$` placeholders. `$1` represents the first argument, counting up from there. Use `$@` to pass all arguments as a shell-escaped string.
+
+For example, the section titled "Test" could contain an @run command with placeholders:
+
+    ## Test
+    @run(./myscript.sh $@)
+
+Then you would run it on the command line using:
+
+    howzit -r test -- -x "arg 1" arg2
+
+This would execute the command as `./myscript.sh -x arg\ 1 arg2`.
+
+Placeholders can be used in both commands and run blocks. If a placeholder doesn't have an argument supplied, it's not replaced (e.g. leaves `$2` in the command).
+
+## Using howzit
 
 Run `howzit` on its own to view the current folder's buildnotes.
 
@@ -127,16 +142,17 @@ Usage: howzit [OPTIONS] [SECTION]
 
 Options:
     -c, --create                     Create a skeleton build note in the current working directory
-    -e, --edit                       Edit buildnotes file in current working directory using $EDITOR
+    -e, --edit                       Edit buildnotes file in current working directory using editor.sh
     -L, --list-completions           List sections for completion
     -l, --list                       List available sections
     -m, --matching TYPE              Section matching: exact, partial (default), beginswith, or fuzzy
     -R, --list-runnable              List sections containing @ directives (verbose)
     -r, --run                        Execute @run, @open, and/or @copy commands for given section
+    -s, --select                     Select section from menu
     -T, --task-list                  List sections containing @ directives (completion-compatible)
     -t, --title                      Output title with build notes
     -w, --wrap COLUMNS               Wrap to specified width (default 80, 0 to disable)
-        --edit-config                Edit configuration file using $EDITOR
+        --edit-config                Edit configuration file using editor.sh
         --title-only                 Output title only
         --[no-]color                 Colorize output (default on)
         --[no-]md-highlight          Highlight Markdown syntax (default on), requires mdless or mdcat
@@ -147,13 +163,13 @@ Options:
 
 ## Configuration
 
-Some of the command line options can be set as defaults. The first time you run `howzit`, a YAML file is written to `~/.config/howzit/howzit.yaml`. It contains the available options:
+Some of the command line options can be set as defaults. The first time you run `howzit`, a YAML file is written to `~/.config/howzit/howzit.yaml`. You can open it in your default editor automatically by running `howzit --edit-config`. It contains the available options:
 
 ```yaml
 ---
 :color: true
 :highlight: true
-:paginate: false
+:paginate: true
 :wrap: 80
 :output_title: false
 :highlighter: auto
@@ -161,9 +177,15 @@ Some of the command line options can be set as defaults. The first time you run 
 :matching: partial
 ```
 
+If `:color:` is false, output will not be colored, and markdown highlighting will be bypassed.
+
+If `:color:` is true and `:highlight:` is true, the `:highlighter:` option will be used to add Markdown highlighting.
+
+If `:paginate:` is true, the `:pager:` option will be used to determine the tool used for pagination. If it's false and you're using iTerm, "marks" will be added to section titles allowing keyboard navigation.
+
 `:highlighter:` and `:pager:` can be set to `auto` (default) or a command of your choice for markdown highlighting and pagination.
 
-`:matching:` can be 'partial', 'beginswith', 'fuzzy' or 'exact' (see below).
+`:matching:` can be "partial", "beginswith", "fuzzy" or "exact" (see below).
 
 ### Matching
 
@@ -193,7 +215,7 @@ All matching is case insensitive. This setting can be overridden by the `--match
 
     _Example:_ Only `howzit another section` will match 'Another Section'
 
-### Pagers
+### Pager
 
 If set to `auto`, howzit will look for pagers in this order, using the first one it finds available:
 
@@ -205,9 +227,9 @@ If set to `auto`, howzit will look for pagers in this order, using the first one
 - cat
 - pager
 
-If you're defining your own, make sure to include any flags necessary to handle the output. If you're using howzit's coloring, for example, you need to specify any options needed for ANSI escape sequences (e.g. `less -r`).
+If you're defining your own, make sure to include any flags necessary to handle the output. If you're using howzit's coloring, for example, you need to specify any options needed to display ANSI escape sequences (e.g. `less -r`).
 
-### Highlighters
+### Highlighter
 
 If set to `auto` howzit will look for markdown highlighters in this order, using the first it finds available:
 
