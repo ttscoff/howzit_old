@@ -6,13 +6,13 @@ Howzit is a tool that allows you to keep Markdown-formatted notes about a projec
 
 ## Features
 
-- Match section titles with any portion of title
+- Match topic titles with any portion of title
 - Automatic pagination of output, with optional Markdown highlighting
-- Wrap output with option (`-w COLUMNS`) to specify width (default 80, 0 to disable)
 - Use `@run()`, `@copy()`, and `@open()` to perform actions within a build notes file
-- Use `@include()` to import another section's tasks
+- Use `@include()` to import another topic's tasks
 - Use fenced code blocks to include/run embedded scripts
-- Set iTerm 2 marks on section titles for navigation when paging is disabled
+- Sets iTerm 2 marks on topic titles for navigation when paging is disabled
+- Inside of git repositories, howzit will work from subdirectories, assuming build notes are in top level of repo
 
 ## Getting Started
 
@@ -32,52 +32,52 @@ Howzit is a simple, self-contained script (at least until I get stupid and make 
 
 ## Anatomy of a Build Notes File
 
-Howzit relies on there being a file in the current directory with a name that starts with "build" and an extension of `.md`, `.txt`, or `.markdown`, e.g. `buildnotes.md`. This note contains sections such as "Build" and "Deploy" with brief notes about each topic in Markdown (or just plain text) format.
+Howzit relies on there being a file in the current directory with a name that starts with "build" and an extension of `.md`, `.txt`, or `.markdown`, e.g. `buildnotes.md`. This note contains topics such as "Build" and "Deploy" with brief notes about each topic in Markdown (or just plain text) format.
 
-The sections of the notes are delineated by Markdown headings, level 2 or higher, with the heading being the title of the section. I split all of mine apart with h2s. For example, a short one from the little website I was working on yesterday:
+The topics of the notes are delineated by Markdown headings, level 2 or higher, with the heading being the title of the topic. I split all of mine apart with h2s. For example, a short one from the little website I was working on yesterday:
 
-```markdown
-## Build
 
-gulp js: compiles and minifies all js to dist/js/main.min.js
+    ## Build
 
-gulp css: compass compile to dist/css/
+    gulp js: compiles and minifies all js to dist/js/main.min.js
 
-gulp watch
+    gulp css: compass compile to dist/css/
 
-gulp (default): [css,js]
+    gulp watch
 
-## Deploy
+    gulp (default): [css,js]
 
-gulp sync: rsync /dist/ to scoffb.local
+    ## Deploy
 
-## Package management
+    gulp sync: rsync /dist/ to scoffb.local
 
-yarn
+    ## Package management
 
-## Components
+    yarn
 
-- UIKit
-```
+    ## Components
 
-Howzit expects there to only be one header level used to split sections. Anything before the first header is ignored. If your sections use h2 (`##`), you can use a single h1 (`#`) line at the top to title the project.
+    - UIKit
+
+
+Howzit expects there to only be one header level used to split topics. Anything before the first header is ignored. If your topics use h2 (`##`), you can use a single h1 (`#`) line at the top to title the project.
 
 ### @Commands
 
-You can include commands that can be executed by howzit. Commands start at the beginning of a line anywhere in a section. Only one section's commands can be run at once, but all commands in the section will be executed when howzit is run with `-r`. Commands can include any of:
+You can include commands that can be executed by howzit. Commands start at the beginning of a line anywhere in a topic. Only one topic's commands can be run at once, but all commands in the topic will be executed when howzit is run with `-r`. Commands can include any of:
 
 - `@run(COMMAND)`
-    
+
     The command in parenthesis will be executed as is from the current directory of the shell
 - `@copy(TEXT)`
 
     On macOS this will copy the text within the parenthesis to the clipboard. An easy way to offer a shortcut to a longer build command while still allowing it to be edited prior to execution.
 - `@open(FILE|URL)`
-    
-    Will open the file or URL using the default application for the filetype. On macOS this uses the `open` command, on Windows it uses `start`, and on Linux it uses `xdg-open`, which may require separate installation.
-- `@include(SECTION)`
 
-    Includes all tasks from another section, matching the name (partial match allowed) and returning first match.
+    Will open the file or URL using the default application for the filetype. On macOS this uses the `open` command, on Windows it uses `start`, and on Linux it uses `xdg-open`, which may require separate installation.
+- `@include(TOPIC)`
+
+    Includes all tasks from another topic, matching the name (partial match allowed) and returning first match.
 
 ### Run blocks (embedded scripts)
 
@@ -100,13 +100,13 @@ Example:
     say "Phew, we did it."
     ```
 
-Multiple blocks can be included in a section. @commands take priority over code blocks and will be run first if they exist in the same section.
+Multiple blocks can be included in a topic. @commands take priority over code blocks and will be run first if they exist in the same topic.
 
 ### Variables
 
-When running commands in a section, you can use a double dash (`--`) in the command line (surrounded by spaces) and anything after it will be interpreted as shell arguments. These can be used in commands with `$` placeholders. `$1` represents the first argument, counting up from there. Use `$@` to pass all arguments as a shell-escaped string.
+When running commands in a topic, you can use a double dash (`--`) in the command line (surrounded by spaces) and anything after it will be interpreted as shell arguments. These can be used in commands with `$` placeholders. `$1` represents the first argument, counting up from there. Use `$@` to pass all arguments as a shell-escaped string.
 
-For example, the section titled "Test" could contain an @run command with placeholders:
+For example, the topic titled "Test" could contain an @run command with placeholders:
 
     ## Test
     @run(./myscript.sh $@)
@@ -123,65 +123,64 @@ Placeholders can be used in both commands and run blocks. If a placeholder doesn
 
 Run `howzit` on its own to view the current folder's buildnotes.
 
-Include a section name to see just that section, or no argument to display all.
+Include a topic name to see just that topic, or no argument to display all.
 
     howzit build
 
-Use `-l` to list all sections.
+Use `-l` to list all topics.
 
     howzit -l
 
-Use `-r` to execute any @copy, @run, or @open commands in the given section. Options can come after the section argument, so to run the commands from the last section you viewed, just hit the up arrow to load the previous command and add `-r`.
+Use `-r` to execute any @copy, @run, or @open commands in the given topic. Options can come after the topic argument, so to run the commands from the last topic you viewed, just hit the up arrow to load the previous command and add `-r`.
 
     howzit build -r
 
 Other options:
 
-```
-Usage: howzit [OPTIONS] [SECTION]
+    Usage: howzit [OPTIONS] [TOPIC]
 
-Options:
-    -c, --create                     Create a skeleton build note in the current working directory
-    -e, --edit                       Edit buildnotes file in current working directory using editor.sh
-    -L, --list-completions           List sections for completion
-    -l, --list                       List available sections
-    -m, --matching TYPE              Section matching: exact, partial (default), beginswith, or fuzzy
-    -R, --list-runnable              List sections containing @ directives (verbose)
-    -r, --run                        Execute @run, @open, and/or @copy commands for given section
-    -s, --select                     Select section from menu
-    -T, --task-list                  List sections containing @ directives (completion-compatible)
-    -t, --title                      Output title with build notes
-    -w, --wrap COLUMNS               Wrap to specified width (default 80, 0 to disable)
-        --edit-config                Edit configuration file using editor.sh
-        --title-only                 Output title only
-        --[no-]color                 Colorize output (default on)
-        --[no-]md-highlight          Highlight Markdown syntax (default on), requires mdless or mdcat
-        --[no-]pager                 Paginate output (default on)
-    -h, --help                       Display this screen
-    -v, --version                    Display version number
-```
+    Options:
+        -c, --create                     Create a skeleton build note in the current working directory
+        -e, --edit                       Edit buildnotes file in current working directory using editor.sh
+        -L, --list-completions           List topics for completion
+        -l, --list                       List available topics
+        -m, --matching TYPE              Topic matching: exact, partial (default), beginswith, or fuzzy
+        -R, --list-runnable              List topics containing @ directives (verbose)
+        -r, --run                        Execute @run, @open, and/or @copy commands for given topic
+        -s, --select                     Select topic from menu
+        -T, --task-list                  List topics containing @ directives (completion-compatible)
+        -t, --title                      Output title with build notes
+        -w, --wrap COLUMNS               Wrap to specified width (default 80, 0 to disable)
+            --edit-config                Edit configuration file using editor.sh
+            --title-only                 Output title only
+            --[no-]color                 Colorize output (default on)
+            --[no-]md-highlight          Highlight Markdown syntax (default on), requires mdless or mdcat
+            --[no-]pager                 Paginate output (default on)
+        -h, --help                       Display this screen
+        -v, --version                    Display version number
+
 
 ## Configuration
 
 Some of the command line options can be set as defaults. The first time you run `howzit`, a YAML file is written to `~/.config/howzit/howzit.yaml`. You can open it in your default editor automatically by running `howzit --edit-config`. It contains the available options:
 
-```yaml
----
-:color: true
-:highlight: true
-:paginate: true
-:wrap: 80
-:output_title: false
-:highlighter: auto
-:pager: auto
-:matching: partial
-```
+
+    ---
+    :color: true
+    :highlight: true
+    :paginate: true
+    :wrap: 80
+    :output_title: false
+    :highlighter: auto
+    :pager: auto
+    :matching: partial
+
 
 If `:color:` is false, output will not be colored, and markdown highlighting will be bypassed.
 
 If `:color:` is true and `:highlight:` is true, the `:highlighter:` option will be used to add Markdown highlighting.
 
-If `:paginate:` is true, the `:pager:` option will be used to determine the tool used for pagination. If it's false and you're using iTerm, "marks" will be added to section titles allowing keyboard navigation.
+If `:paginate:` is true, the `:pager:` option will be used to determine the tool used for pagination. If it's false and you're using iTerm, "marks" will be added to topic titles allowing keyboard navigation.
 
 `:highlighter:` and `:pager:` can be set to `auto` (default) or a command of your choice for markdown highlighting and pagination.
 
@@ -193,27 +192,27 @@ All matching is case insensitive. This setting can be overridden by the `--match
 
 - `:matching: partial`
 
-    Partial is the default, search matches any part of the section title.
+    Partial is the default, search matches any part of the topic title.
 
-    _Example:_ `howzit other` matches 'An<mark>other</mark> Section'.
+    _Example:_ `howzit other` matches 'An<mark>other</mark> Topic'.
 
-- ':matching: beginswith` 
+- ':matching: beginswith`
 
     Matches from the start of the title.
 
-    _Example:_ `howzit another` matches '<mark>Another</mark> Section', but neither 'other' or 'section' will.
+    _Example:_ `howzit another` matches '<mark>Another</mark> Topic', but neither 'other' or 'topic' will.
 
-- `:matching: fuzzy` 
+- `:matching: fuzzy`
 
     Matches anything containing the search characters in order, no matter what comes between them.
 
     _Example:_ `howzit asct` matches '<mark>A</mark>nother <mark>S</mark>e<mark>c</mark><mark>t</mark>ion'
 
-- `:matching: exact` 
+- `:matching: exact`
 
     Case insensitive but must match the entire title.
 
-    _Example:_ Only `howzit another section` will match 'Another Section'
+    _Example:_ Only `howzit another topic` will match 'Another Topic'
 
 ### Pager
 
@@ -242,7 +241,7 @@ If you're combining a highlighter with howzit's pagination, include any flags ne
 
 I personally like to alias `bld` to `howzit -r`. If you define a function in your shell, you can have it default to "build" but accept an alternate argument. There's an example for Fish included, and in Bash it would be as simple as `howzit -r ${1:build}`.
 
-For completion you can use `howzit -L` to list all sections, and `howzit -T` to list all "runnable" sections (sections containing an @directive or run block). Completion examples for Fish are included in the `fish` directory.
+For completion you can use `howzit -L` to list all topics, and `howzit -T` to list all "runnable" topics (topics containing an @directive or run block). Completion examples for Fish are included in the `fish` directory.
 
 ## Similar Projects
 
@@ -250,7 +249,7 @@ For completion you can use `howzit -L` to list all sections, and `howzit -T` to 
 - [maid](https://github.com/egoist/maid)
 - [saku](https://github.com/kt3k/saku)
 
-There are a few projects that tackle the same concept (a Markdown makefile). Most of them are superior task runners, so if you're looking for a `make` replacement, I recommend exploring the links above. What I like about `howzit` (and what keeps me from switching) is that it's documentation-first, and that I can display the description for each section on the command line. The others also don't have options for listing sections or runnable tasks, so I can't use completion (or my cool script that adds available tasks to my Macbook Pro Touch Bar...). But no, I don't think `howzit` is as good an overall task runner as `mask` or `maid`.
+There are a few projects that tackle the same concept (a Markdown makefile). Most of them are superior task runners, so if you're looking for a `make` replacement, I recommend exploring the links above. What I like about `howzit` (and what keeps me from switching) is that it's documentation-first, and that I can display the description for each topic on the command line. The others also don't have options for listing topics or runnable tasks, so I can't use completion (or my cool script that adds available tasks to my Macbook Pro Touch Bar...). But no, I don't think `howzit` is as good an overall task runner as `mask` or `maid`.
 
 ## Author
 
@@ -262,14 +261,20 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 
 ## Roadmap
 
-- Recognize header hierarchy, allow showing/running all sub-sections
+- Recognize header hierarchy, allow showing/running all sub-topics
 
 ## Changelog
+
+### 1.1.15
+
+- Code refactoring/cleanup
+- Rename "sections" to "topics"
+- If no match found for topic search, only show error (`:show_all_on_error: false` option)
 
 ### 1.1.14
 
 - Fix removal of non-alphanumeric characters from titles
-- -s/--select option to display a menu of all available sections
+- -s/--select option to display a menu of all available topics
 - Allow arguments to be passed after `--` for variable substitution
 - Allow --matching TYPE to match first non-ambigous keyword match
 
@@ -285,8 +290,8 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 
 ### 1.1.11
 
-- Add full fuzzy matching for section titles
-- Add `@include(SECTION)` command to import another section's tasks
+- Add full fuzzy matching for topic titles
+- Add `@include(TOPIC)` command to import another topic's tasks
 
 ### 1.1.10
 
@@ -312,7 +317,7 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 
 ### 1.1.4
 
-- Fix for "Section not found" when run with no arguments
+- Fix for "topic not found" when run with no arguments
 
 ### 1.1.1
 
@@ -321,14 +326,14 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 
 ### 1.1.0
 
-- Add -R switch for listing "runnable" sections
-- Add -T switch for completion-compatible listing of "runnable" sections
-- Add -L switch for completion-compatible listing of all sections
+- Add -R switch for listing "runnable" topics
+- Add -T switch for completion-compatible listing of "runnable" topics
+- Add -L switch for completion-compatible listing of all topics
 
 ### 1.0.1
 
-- Allow section matching within title, not just at start
-- Remove formatting of section text for better compatibility with mdless/mdcat
+- Allow topic matching within title, not just at start
+- Remove formatting of topic text for better compatibility with mdless/mdcat
 - Add @run() syntax to allow executable commands
 - Add @copy() syntax to copy text to clipboard
 - Add @url/@open() syntax to open urls/files, OS agnostic (hopefully)
