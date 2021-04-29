@@ -26,7 +26,7 @@ Howzit is a simple, self-contained script (at least until I get stupid and make 
 
 ### Installing
 
-[Download the script](https://github.com/ttscoff/howzit/blob/master/howzit) as `howzit` to a folder in your $PATH and make it executable with:
+[Download the script](https://github.com/ttscoff/howzit/blob/main/howzit) as `howzit` to a folder in your $PATH and make it executable with:
 
     chmod a+x howzit
 
