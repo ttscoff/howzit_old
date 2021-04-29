@@ -122,7 +122,7 @@ module BuildNotes
     # markdown
     def which_highlighter
       if @options[:highlighter] =~ /auto/i
-        highlighters = %w[mdless mdcat]
+        highlighters = %w[mdcat mdless]
         highlighters.delete_if(&:nil?).select!(&:available?)
         return nil if highlighters.empty?
 
@@ -231,13 +231,13 @@ module BuildNotes
         pipes = "|#{hl}" if hl
       end
 
-      output = `echo #{Shellwords.escape(string)}#{pipes}`
+      output = `echo #{Shellwords.escape(string.strip)}#{pipes}`
 
       if options[:paginate]
         page(output)
       else
         output.gsub!(/^╌/, '\e]1337;SetMark\a╌') if ENV['TERM_PROGRAM'] =~ /^iTerm/
-        $stdout.puts output
+        puts output
       end
     end
 
@@ -915,8 +915,8 @@ module BuildNotes
         # If there's no argument or no match found, output all
         topics.each_key { |k| output.push(process_topic(k, false)) }
       end
-
-      show(output.join("\n"), @options)
+      @options[:paginate] = false if @options[:run]
+      show(output.join("\n").strip, @options)
     end
   end
 end

@@ -242,8 +242,8 @@ If you're defining your own, make sure to include any flags necessary to handle 
 
 If set to `auto` howzit will look for markdown highlighters in this order, using the first it finds available:
 
-- mdless
 - mdcat
+- mdless
 
 If you're combining a highlighter with howzit's pagination, include any flags needed to disable the highlighter's pagination (e.g. `mdless --no-pager`).
 
