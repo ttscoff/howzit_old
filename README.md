@@ -4,6 +4,8 @@ A command-line reference tool for tracking project build systems
 
 Howzit is a tool that allows you to keep Markdown-formatted notes about a project's tools and procedures. It functions as an easy lookup for notes about a particular task, as well as a task runner to automatically execute appropriate commands.
 
+<!--BEGIN PROJECT-->
+
 ## Features
 
 - Match topic titles with any portion of title
@@ -26,7 +28,15 @@ Howzit is a simple, self-contained script (at least until I get stupid and make 
 
 ### Installing
 
-[Download the script](https://github.com/ttscoff/howzit/blob/main/howzit) as `howzit` to a folder in your $PATH and make it executable with:
+#### One-Line Install
+
+You can install `howzit` by running:
+
+    curl -SsL 'https://raw.githubusercontent.com/ttscoff/howzit/main/install.sh'|bash
+
+#### Manual Install
+
+[Clone the repo](https://github.com/ttscoff/howzit/) or just [download the self-contained script](https://github.com/ttscoff/howzit/blob/main/howzit). Save the script as `howzit` to a folder in your $PATH and make it executable with:
 
     chmod a+x howzit
 
@@ -251,6 +261,10 @@ For completion you can use `howzit -L` to list all topics, and `howzit -T` to li
 
 There are a few projects that tackle the same concept (a Markdown makefile). Most of them are superior task runners, so if you're looking for a `make` replacement, I recommend exploring the links above. What I like about `howzit` (and what keeps me from switching) is that it's documentation-first, and that I can display the description for each topic on the command line. The others also don't have options for listing topics or runnable tasks, so I can't use completion (or my cool script that adds available tasks to my Macbook Pro Touch Bar...). But no, I don't think `howzit` is as good an overall task runner as `mask` or `maid`.
 
+## Roadmap
+
+- Recognize header hierarchy, allow showing/running all sub-topics
+
 ## Author
 
 **Brett Terpstra** - [brettterpstra.com](https://brettterpstra.com)
@@ -259,11 +273,11 @@ There are a few projects that tackle the same concept (a Markdown makefile). Mos
 
 This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
 
-## Roadmap
-
-- Recognize header hierarchy, allow showing/running all sub-topics
+<!--END PROJECT-->
 
 ## Changelog
+
+<!--BEGIN CHANGELOG-->
 
 ### 1.1.15
 
@@ -342,3 +356,5 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 - Offer to create skeleton buildnotes if none found
 - Set iTerm 2 marks for navigation when paging is disabled
 - Wrap output with option to specify width (default 80, 0 to disable)
+
+<!--END CHANGELOG-->
