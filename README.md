@@ -46,7 +46,6 @@ Howzit relies on there being a file in the current directory with a name that st
 
 The topics of the notes are delineated by Markdown headings, level 2 or higher, with the heading being the title of the topic. I split all of mine apart with h2s. For example, a short one from the little website I was working on yesterday:
 
-
     ## Build
 
     gulp js: compiles and minifies all js to dist/js/main.min.js
@@ -68,7 +67,6 @@ The topics of the notes are delineated by Markdown headings, level 2 or higher, 
     ## Components
 
     - UIKit
-
 
 Howzit expects there to only be one header level used to split topics. Anything before the first header is ignored. If your topics use h2 (`##`), you can use a single h1 (`#`) line at the top to title the project.
 
@@ -169,11 +167,9 @@ Other options:
         -h, --help                       Display this screen
         -v, --version                    Display version number
 
-
 ## Configuration
 
 Some of the command line options can be set as defaults. The first time you run `howzit`, a YAML file is written to `~/.config/howzit/howzit.yaml`. You can open it in your default editor automatically by running `howzit --edit-config`. It contains the available options:
-
 
     ---
     :color: true
@@ -184,7 +180,6 @@ Some of the command line options can be set as defaults. The first time you run 
     :highlighter: auto
     :pager: auto
     :matching: partial
-
 
 If `:color:` is false, output will not be colored, and markdown highlighting will be bypassed.
 
