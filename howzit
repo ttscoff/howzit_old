@@ -7,7 +7,7 @@
 # | '_ \ / _ \ \ /\ / /_  / | __|
 # | | | | (_) \ V  V / / /| | |_
 # |_| |_|\___/ \_/\_/ /___|_|\__|
-VERSION = '1.1.16'
+VERSION = '1.1.17'
 
 require 'optparse'
 require 'shellwords'
@@ -360,6 +360,7 @@ module BuildNotes
 
     def os_open(command)
       os = RbConfig::CONFIG['target_os']
+      out = "\e[1;32mOpening \e[3;37m#{command}"
       case os
       when /darwin.*/i
         warn "#{out} (macOS)\e[0m"
@@ -405,7 +406,6 @@ module BuildNotes
             warn "\e[1;32mCopied \e[3;37m#{obj}\e[1;32m to clipboard\e[0m"
             `echo #{Shellwords.escape(obj)}'\\c'|pbcopy`
           when /open|url/i
-            out = "\e[1;32mOpening \e[3;37m#{obj}"
             os_open(obj)
           end
         end
