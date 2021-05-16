@@ -7,7 +7,7 @@
 # | '_ \ / _ \ \ /\ / /_  / | __|
 # | | | | (_) \ V  V / / /| | |_
 # |_| |_|\___/ \_/\_/ /___|_|\__|
-VERSION = '1.1.15'
+VERSION = '1.1.16'
 
 require 'optparse'
 require 'shellwords'
@@ -360,7 +360,6 @@ module BuildNotes
 
     def os_open(command)
       os = RbConfig::CONFIG['target_os']
-      out = "\e[1;32mOpening \e[3;37m#{obj}"
       case os
       when /darwin.*/i
         warn "#{out} (macOS)\e[0m"
@@ -406,6 +405,7 @@ module BuildNotes
             warn "\e[1;32mCopied \e[3;37m#{obj}\e[1;32m to clipboard\e[0m"
             `echo #{Shellwords.escape(obj)}'\\c'|pbcopy`
           when /open|url/i
+            out = "\e[1;32mOpening \e[3;37m#{obj}"
             os_open(obj)
           end
         end
@@ -434,13 +434,28 @@ module BuildNotes
     end
 
     # Output a topic with fancy title and bright white text.
-    def output_topic(key)
+    def output_topic(key, options = {})
+      defaults = { single: false, header: true }
+      opt = defaults.merge(options)
+
       output = []
-      output.push(format_header(key))
-      output.push('')
+      if opt[:header]
+        output.push(format_header(key))
+        output.push('')
+      end
       topics[key].strip.split(/\n/).each do |l|
         case l
-        when /@(run|copy|open|url)\((.*?)\)/
+        when /@include\((.*?)\)/
+          m = Regexp.last_match
+          matches = match_topic(m[1])
+          unless matches.empty?
+            output.push(format_header("Include #{matches[0]}", {color:"33;40", hr: '.'}))
+            if opt[:single]
+              output.concat(output_topic(matches[0], {single: true, header: false}))
+              output.push(format_header("End include #{matches[0]}", {color:"33;40", hr: '.'}))
+            end
+          end
+        when /@(run|copy|open|url|include)\((.*?)\)/
           m = Regexp.last_match
           cmd = m[1]
           obj = m[2]
@@ -454,7 +469,7 @@ module BuildNotes
                  end
           output.push("\e[1;35;40m#{icon} \e[3;37;40m#{obj}\e[0m")
         when /(`{3,})run/i
-          output.push("\e[1;35;40m\u{25B6} \e[3;37;40mCode Block\e[0m")
+          output.push("\e[1;35;40m\u{25B6} \e[3;37;40mCode Block\e[0m\n```")
         else
           l.wrap!(@options[:wrap]) if (@options[:wrap]).positive?
           output.push(l)
@@ -463,7 +478,7 @@ module BuildNotes
       output.push('')
     end
 
-    def process_topic(key, run)
+    def process_topic(key, run, single = false)
       # Handle variable replacement
       content = topics[key]
       unless @arguments.empty?
@@ -477,7 +492,7 @@ module BuildNotes
       output = if run
                  run_topic(key)
                else
-                 output_topic(key)
+                 output_topic(key, {single: single})
                end
       output.join("\n")
     end
@@ -910,10 +925,10 @@ module BuildNotes
 
       if match
         # If we found a match
-        output.push(process_topic(match, @options[:run]))
+        output.push(process_topic(match, @options[:run], true))
       else
         # If there's no argument or no match found, output all
-        topics.each_key { |k| output.push(process_topic(k, false)) }
+        topics.each_key { |k| output.push(process_topic(k, false, false)) }
       end
       @options[:paginate] = false if @options[:run]
       show(output.join("\n").strip, @options)
