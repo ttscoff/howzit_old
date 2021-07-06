@@ -1,5 +1,4 @@
 #!/usr/bin/env ruby
-# frozen_string_literal: true
 
 #  _                       _ _
 # | |                     (_) |
@@ -7,7 +6,7 @@
 # | '_ \ / _ \ \ /\ / /_  / | __|
 # | | | | (_) \ V  V / / /| | |_
 # |_| |_|\___/ \_/\_/ /___|_|\__|
-VERSION = '1.1.17'
+VERSION = '1.1.18'
 
 require 'optparse'
 require 'shellwords'
@@ -564,7 +563,7 @@ module BuildNotes
       filename = find_note_file
       help = IO.read(filename)
       topics_dict = {}
-      split = help.split(/##+/)
+      split = help.split(/^##+/)
       split.slice!(0)
       split.each do |sect|
         next if sect.strip.empty?
@@ -743,7 +742,7 @@ module BuildNotes
       # Check for a build note file in the current folder. Filename must start
       # with "build" and have an extension of txt, md, or markdown.
       Dir.glob('*.{txt,md,markdown}').each do |f|
-        if f.downcase =~ /^build/
+        if f.downcase =~ /^build[^.]+/
           filename = f
           break
         end
@@ -761,6 +760,7 @@ module BuildNotes
           filename = glob_note
         end
       end
+
       filename
     end
 
