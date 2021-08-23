@@ -89,9 +89,11 @@ module BuildNotes
         at = line.index(/\s/, last_at + 1)
       end
 
-      last_at = width if last_at.nil?
-
-      [indent + line[0, last_at], line[last_at + 1, line.length]]
+      if last_at.nil?
+        [indent + line[0, width], line[width, line.length]]
+      else
+        [indent + line[0, last_at], line[last_at + 1, line.length]]
+      end
     end
 
     def available?
