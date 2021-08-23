@@ -42,7 +42,9 @@ You can install `howzit` by running:
 
 ## Anatomy of a Build Notes File
 
-Howzit relies on there being a file in the current directory with a name that starts with "build" and an extension of `.md`, `.txt`, or `.markdown`, e.g. `buildnotes.md`. This note contains topics such as "Build" and "Deploy" with brief notes about each topic in Markdown (or just plain text) format.
+Howzit relies on there being a file in the current directory with a name that starts with "build" or "howzit" and an extension of `.md`, `.txt`, or `.markdown`, e.g. `buildnotes.md` or `howzit.txt`. This note contains topics such as "Build" and "Deploy" with brief notes about each topic in Markdown (or just plain text) format.
+
+> Tip: Add "buildprivate.md" to your global gitignore (`git config --get core.excludesfile`). In a project where you don't want to share your build notes, just name the file "buildprivate.md" instead of "buildnotes.md" and it will automatically be ignored.
 
 The topics of the notes are delineated by Markdown headings, level 2 or higher, with the heading being the title of the topic. I split all of mine apart with h2s. For example, a short one from the little website I was working on yesterday:
 
@@ -158,6 +160,7 @@ Other options:
         -s, --select                     Select topic from menu
         -T, --task-list                  List topics containing @ directives (completion-compatible)
         -t, --title                      Output title with build notes
+        -u, --upstream                   Traverse up parent directories for additional build notes
         -w, --wrap COLUMNS               Wrap to specified width (default 80, 0 to disable)
             --edit-config                Edit configuration file using editor.sh
             --title-only                 Output title only
@@ -180,6 +183,7 @@ Some of the command line options can be set as defaults. The first time you run 
     :highlighter: auto
     :pager: auto
     :matching: partial
+    :include_upstream: false
 
 If `:color:` is false, output will not be colored, and markdown highlighting will be bypassed.
 
@@ -190,6 +194,8 @@ If `:paginate:` is true, the `:pager:` option will be used to determine the tool
 `:highlighter:` and `:pager:` can be set to `auto` (default) or a command of your choice for markdown highlighting and pagination.
 
 `:matching:` can be "partial", "beginswith", "fuzzy" or "exact" (see below).
+
+If `:include_upstream:` is true, build note files in parent directories will be included in addition to the current directory. Priority goes from current directory to root in descending order, so the current directory is top priority, and a build notes file in / is the lowest. Duplicate sections being overwritten by the higher priority.
 
 ### Matching
 
@@ -273,6 +279,10 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 ## Changelog
 
 <!--BEGIN CHANGELOG-->
+
+### 1.1.19
+
+- Add `--upstream` option to traverse up parent directories for additional build notes
 
 ### 1.1.15
 

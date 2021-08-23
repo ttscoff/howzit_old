@@ -1,12 +1,13 @@
 #!/usr/bin/env ruby
 
-#  _                       _ _
-# | |                     (_) |
-# | |__   _____      _______| |_
-# | '_ \ / _ \ \ /\ / /_  / | __|
-# | | | | (_) \ V  V / / /| | |_
-# |_| |_|\___/ \_/\_/ /___|_|\__|
-VERSION = '1.1.18'
+#------------------------------------------\
+#  _                  _ _             ___  |
+# | |_  _____ __ ____(_) |_          |__ \ |
+# | ' \/ _ \ V  V /_ / |  _|  _ _ _    /_/ |
+# |_||_\___/\_/\_//__|_|\__| (_|_|_)  (_)  |
+#----<https://github.com/ttscoff/howzit>---/
+
+VERSION = '1.1.19'
 
 require 'optparse'
 require 'shellwords'
@@ -558,11 +559,23 @@ module BuildNotes
       output.join("\n")
     end
 
-    # Read in the build notes file and output a hash of "Title" => contents
-    def read_help
-      filename = find_note_file
-      help = IO.read(filename)
+    def read_upstream
+      buildnotes = glob_upstream
       topics_dict = {}
+      buildnotes.each do |path|
+        topics_dict = topics_dict.merge(read_help_file(path))
+      end
+      topics_dict
+    end
+
+    # Read in the build notes file and output a hash of "Title" => contents
+    def read_help_file(filename = nil)
+      filename ||= find_note_file
+      topics_dict = {}
+
+      help = IO.read(filename)
+
+
       split = help.split(/^##+/)
       split.slice!(0)
       split.each do |sect|
@@ -574,6 +587,17 @@ module BuildNotes
       end
       topics_dict
     end
+
+    def read_help
+      topics = read_help_file
+      if @options[:include_upstream]
+        upstream_topics = read_upstream
+
+        topics = upstream_topics.merge(topics)
+      end
+      topics
+    end
+
 
     def match_topic(search)
       matches = []
@@ -616,7 +640,8 @@ module BuildNotes
         highlighter: 'auto',
         pager: 'auto',
         matching: 'partial', # exact, partial, fuzzy, beginswith
-        show_all_on_error: false
+        show_all_on_error: false,
+        include_upstream: false
       }
 
       parts = Shellwords.shelljoin(args).split(/ -- /)
@@ -675,6 +700,10 @@ module BuildNotes
 
         opts.on('-t', '--title', 'Output title with build notes') do
           @options[:output_title] = true
+        end
+
+        opts.on('-u', '--upstream', 'Traverse up parent directories for additional build notes') do
+          @options[:include_upstream] = true
         end
 
         opts.on('-w', '--wrap COLUMNS', 'Wrap to specified width (default 80, 0 to disable)') do |w|
@@ -737,12 +766,35 @@ module BuildNotes
       end
     end
 
+    ##
+    ## @brief      Traverse up directory tree looking for build notes
+    ##
+    ## @return     topics dictionary
+    ##
+    def glob_upstream
+      home = Dir.pwd
+      dir = File.dirname(home)
+      buildnotes = []
+      filename = nil
+
+      while dir != '/' && (dir =~ %r{[A-Z]:/}).nil?
+        Dir.chdir(dir)
+        filename = glob_note
+        buildnotes.push(File.join(dir, filename)) unless filename.nil?
+        dir = File.dirname(dir)
+      end
+
+      Dir.chdir(home)
+
+      buildnotes.reverse
+    end
+
     def glob_note
       filename = nil
       # Check for a build note file in the current folder. Filename must start
       # with "build" and have an extension of txt, md, or markdown.
       Dir.glob('*.{txt,md,markdown}').each do |f|
-        if f.downcase =~ /^build[^.]+/
+        if f.downcase =~ /^(build[^.]*|howzit[^.]*)/
           filename = f
           break
         end
