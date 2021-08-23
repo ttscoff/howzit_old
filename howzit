@@ -571,8 +571,8 @@ module BuildNotes
     end
 
     # Read in the build notes file and output a hash of "Title" => contents
-    def read_help_file(filename = nil)
-      filename ||= find_note_file
+    def read_help_file(path = nil)
+      filename = path.nil? ? find_note_file : path
       topics_dict = {}
 
       help = IO.read(filename)
@@ -585,16 +585,23 @@ module BuildNotes
 
         lines = sect.split(/\n/)
         title = lines.slice!(0).strip
-        topics_dict[title] = lines.join("\n").strip
+        prefix = ''
+        if path
+          home = ENV['HOME']
+          short_path = path.sub(/^#{home}/, '~')
+          prefix = "_from #{short_path}_\n\n"
+          title = "#{File.dirname(short_path)}:#{title}"
+        end
+        topics_dict[title] = prefix + lines.join("\n").strip
       end
       topics_dict
     end
 
     def read_help
       topics = read_help_file
+
       if @options[:include_upstream]
         upstream_topics = read_upstream
-
         topics = upstream_topics.merge(topics)
       end
       topics
@@ -813,6 +820,11 @@ module BuildNotes
           Dir.chdir(proj_dir)
           filename = glob_note
         end
+      end
+
+      if filename.nil? && @options[:include_upstream]
+        upstream_notes = glob_upstream
+        filename = upstream_notes[-1] if upstream_notes.length > 0
       end
 
       filename
