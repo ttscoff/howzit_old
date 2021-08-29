@@ -7,7 +7,7 @@
 # |_||_\___/\_/\_//__|_|\__| (_|_|_)  (_)  |
 #----<https://github.com/ttscoff/howzit>---/
 
-VERSION = '1.1.20'
+VERSION = '1.1.21'
 
 require 'optparse'
 require 'shellwords'
@@ -399,47 +399,46 @@ module BuildNotes
       output = []
       tasks = 0
       if topics[key] =~ /(@(include|run|copy|open|url)\((.*?)\)|`{3,}run)/i
-        directives = topics[key].scan(/@(include|run|copy|open|url)\((.*?)\)/i)
+        directives = topics[key].scan(/(?:@(include|run|copy|open|url)\((.*?)\)|(`{3,})run(?: +([^\n]+))?(.*?)\3)/mi)
+
         tasks += directives.length
         directives.each do |c|
-          cmd = c[0]
-          obj = c[1]
-          case cmd
-          when /include/i
-            matches = match_topic(obj)
-            if matches.empty?
-              warn "No topic match for @include(#{search})"
-            else
-              warn "\e[1;33mIncluding tasks from \e[3;37m#{matches[0]}\e[0m"
-              process_topic(matches[0], true)
-              warn "\e[1;33mEnd include \e[3;37m#{matches[0]}\e[0m"
+          if c[0].nil?
+            title = c[3] ? c[3].strip : ''
+            warn "\e[1;32mRunning block \e[3;37m#{title}\e[0m"
+            block = c[4].strip
+            script = Tempfile.new('howzit_script')
+            begin
+              script.write(block)
+              script.close
+              File.chmod(0777, script.path)
+              system(%(/bin/sh -c "#{script.path}"))
+            ensure
+              script.close
+              script.unlink
             end
-          when /run/i
-            warn "\e[1;32mRunning \e[3;37m#{obj}\e[0m"
-            system(obj)
-          when /copy/i
-            warn "\e[1;32mCopied \e[3;37m#{obj}\e[1;32m to clipboard\e[0m"
-            `echo #{Shellwords.escape(obj)}'\\c'|pbcopy`
-          when /open|url/i
-            os_open(obj)
-          end
-        end
-
-        blocks = topics[key].scan(/(`{3,})run(?: +([^\n]+))?(.*?)\1/mi)
-        tasks += blocks.length
-        blocks.each do |c|
-          title = c[1] ? c[1].strip : ''
-          warn "\e[1;32mRunning block \e[3;37m#{title}\e[0m"
-          block = c[2].strip
-          script = Tempfile.new('howzit_script')
-          begin
-            script.write(block)
-            script.close
-            File.chmod(0777, script.path)
-            system(%(/bin/sh -c "#{script.path}"))
-          ensure
-            script.close
-            script.unlink
+          else
+            cmd = c[0]
+            obj = c[1]
+            case cmd
+            when /include/i
+              matches = match_topic(obj)
+              if matches.empty?
+                warn "No topic match for @include(#{search})"
+              else
+                warn "\e[1;33mIncluding tasks from \e[3;37m#{matches[0]}\e[0m"
+                process_topic(matches[0], true)
+                warn "\e[1;33mEnd include \e[3;37m#{matches[0]}\e[0m"
+              end
+            when /run/i
+              warn "\e[1;32mRunning \e[3;37m#{obj}\e[0m"
+              system(obj)
+            when /copy/i
+              warn "\e[1;32mCopied \e[3;37m#{obj}\e[1;32m to clipboard\e[0m"
+              `echo #{Shellwords.escape(obj)}'\\c'|pbcopy`
+            when /open|url/i
+              os_open(obj)
+            end
           end
         end
       else

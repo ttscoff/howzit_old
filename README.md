@@ -330,6 +330,10 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 
 <!--BEGIN CHANGELOG-->
 
+### 1.1.21
+
+- Merge directive and block handling so execution order is sequential
+
 ### 1.1.20
 
 - Template functionality for including common tasks/topics
