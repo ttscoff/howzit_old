@@ -103,17 +103,30 @@ module BuildNotes
         system "which #{self}", out: File::NULL
       end
     end
+
+    def render_template(vars)
+      content = dup
+      vars.each do |k, v|
+        content.gsub!(/\[%#{k}(:.*?)?\]/, v)
+      end
+
+      content.gsub(/\[%(.*?):(.*?)\]/, '\2')
+    end
+
+    def render_template!(vars)
+      replace render_template(vars)
+    end
   end
 end
 
-class String
+class ::String
   include BuildNotes::StringUtils
 end
 
 module BuildNotes
   # Main Class
   class NoteReader
-    attr_accessor :arguments
+    attr_accessor :arguments, :metadata
 
     def topics
       @topics ||= read_help
@@ -570,13 +583,54 @@ module BuildNotes
       topics_dict
     end
 
+    def get_template_topics(content)
+      leader = content.split(/^#/)[0].strip
+
+      template_topics = {}
+      if leader.length > 0
+        data = {}
+        leader.scan(/(?mi)^(\S[\s\S]+?): ([\s\S]*?)(?=\n\S[\s\S]*?:|\Z)/).each do |m|
+          data[m[0].strip.downcase] = m[1]
+          @metadata = @metadata.merge(data)
+        end
+
+        if data.key?('template')
+          templates = data['template'].strip.split(/\s*,\s*/)
+          templates.each do |t|
+            tasks = nil
+            if t =~ /\[(.*?)\]$/
+              tasks = Regexp.last_match[1].split(/\s*,\s*/).map {|t| t.gsub(/\*/, '.*?')}
+              t = t.sub(/\[.*?\]$/, '').strip
+            end
+
+            t_file = t.sub(/(\.md)?$/, '.md')
+            template = File.join(template_folder, t_file)
+            if File.exist?(template)
+              t_topics = read_help_file(template)
+              if tasks
+                tasks.each do |task|
+                  t_topics.keys.each do |topic|
+                    if topic =~ /^(.*?:)?#{task}$/i
+                      template_topics[topic] = t_topics[topic]
+                    end
+                  end
+                end
+              else
+                template_topics = template_topics.merge(t_topics)
+              end
+            end
+          end
+        end
+      end
+      template_topics
+    end
+
     # Read in the build notes file and output a hash of "Title" => contents
     def read_help_file(path = nil)
       filename = path.nil? ? find_note_file : path
       topics_dict = {}
-
       help = IO.read(filename)
-
+      template_topics = get_template_topics(help)
 
       split = help.split(/^##+/)
       split.slice!(0)
@@ -586,23 +640,39 @@ module BuildNotes
         lines = sect.split(/\n/)
         title = lines.slice!(0).strip
         prefix = ''
+        t_title = ''
         if path
-          home = ENV['HOME']
-          short_path = path.sub(/^#{home}/, '~')
-          prefix = "_from #{short_path}_\n\n"
-          title = "#{File.dirname(short_path)}:#{title}"
+          if path =~ /#{template_folder}/
+            short_path = File.basename(path, '.md')
+          else
+            home = ENV['HOME']
+            short_path = File.dirname(path.sub(/^#{home}/, '~'))
+            prefix = "_from #{short_path}_\n\n"
+          end
+          title = "#{short_path}:#{title}"
         end
-        topics_dict[title] = prefix + lines.join("\n").strip
+        topics_dict[title] = prefix + lines.join("\n").strip.render_template(@metadata)
       end
+
+      template_topics.each do |title, content|
+        unless topics_dict.key?(title.sub(/^.+:/, ''))
+          topics_dict[title] = content
+        end
+      end
+
       topics_dict
     end
 
     def read_help
       topics = read_help_file
-
       if @options[:include_upstream]
         upstream_topics = read_upstream
-        topics = upstream_topics.merge(topics)
+        upstream_topics.each do |topic, content|
+          unless topics.key?(topic.sub(/^.*?:/, ''))
+            topics[topic] = content
+          end
+        end
+        # topics = upstream_topics.merge(topics)
       end
       topics
     end
@@ -652,6 +722,8 @@ module BuildNotes
         show_all_on_error: false,
         include_upstream: false
       }
+
+      @metadata = {}
 
       parts = Shellwords.shelljoin(args).split(/ -- /)
       args = parts[0] ? Shellwords.shellsplit(parts[0]) : []
@@ -789,7 +861,10 @@ module BuildNotes
       while dir != '/' && (dir =~ %r{[A-Z]:/}).nil?
         Dir.chdir(dir)
         filename = glob_note
-        buildnotes.push(File.join(dir, filename)) unless filename.nil?
+        unless filename.nil?
+          note = File.join(dir, filename)
+          buildnotes.push(note) unless note == @note_file
+        end
         dir = File.dirname(dir)
       end
 
@@ -812,6 +887,7 @@ module BuildNotes
     end
 
     def find_note_file
+      return @note_file if @note_file
       filename = glob_note
 
       if filename.nil? && 'git'.available?
@@ -827,7 +903,8 @@ module BuildNotes
         filename = upstream_notes[-1] if upstream_notes.length > 0
       end
 
-      filename
+      @note_file = File.expand_path(filename)
+      return @note_file
     end
 
     def options_list(matches)
@@ -877,6 +954,10 @@ module BuildNotes
 
     def config_file
       File.join(config_dir, CONFIG_FILE)
+    end
+
+    def template_folder
+      File.join(config_dir, 'templates')
     end
 
     def create_config

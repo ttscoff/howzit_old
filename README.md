@@ -15,6 +15,7 @@ Howzit is a tool that allows you to keep Markdown-formatted notes about a projec
 - Use fenced code blocks to include/run embedded scripts
 - Sets iTerm 2 marks on topic titles for navigation when paging is disabled
 - Inside of git repositories, howzit will work from subdirectories, assuming build notes are in top level of repo
+- Templates for easily including repeat tasks
 
 ## Getting Started
 
@@ -129,6 +130,51 @@ This would execute the command as `./myscript.sh -x arg\ 1 arg2`.
 
 Placeholders can be used in both commands and run blocks. If a placeholder doesn't have an argument supplied, it's not replaced (e.g. leaves `$2` in the command).
 
+### Templates and metadata
+
+You can create templates to reuse topics in multiple build note files. Create files using the same formatting as a build note in `~/.config/howzit/templates` with `.md` extensions. Name them the way you'll reference them:
+
+    ~/.config/howzit/templates
+    - markdown.md
+    - ruby.md
+    - obj-c.md
+
+You can then include the topics from a template in any build note file using a `template:` key at the top of the file.
+
+Howzit allows MultiMarkdown-style metadata at the top of a build notes file. These are key/value pairs separated by a colon:
+
+    template: markdown
+    key 1: value 1
+    key 2: value 2
+
+Additional metadata keys populate variables you can then use inside of your templates (and build notes), using `[%key]`. You can define a default value for a placeholder with `[%key:default]`.
+
+For example, in the template `markdown.md` you could have:
+
+    ### Spellcheck
+
+    Check spelling of all Markdown files in git repo.
+
+    ```run
+    #!/bin/bash
+    for dir in [%dirs:.]; do
+        cd "$dir"
+        /Users/ttscoff/scripts/spellcheck.bash
+        cd -
+    done
+    ```
+
+Then, in a `buildnotes.md` file in your project, you could include at the top of the file:
+
+    template: markdown
+    dirs: . docs
+
+    # My Project...
+
+If you only want to include certain topics from a template file, use the format `template_name[topic]` or include multiple topics separated by commas: `template_name[topic 1, topic 2]`. You can also use `*` as a wildcard, where `template_name[build*]` would include topics "Build" and "Build and Run".
+
+If a topic in the current project's build note has an identical name to a template topic, the local topic takes precedence. This allows you to include a template but modify just a part of it by duplicating the topic title.
+
 ## Using howzit
 
 Run `howzit` on its own to view the current folder's buildnotes.
@@ -195,7 +241,7 @@ If `:paginate:` is true, the `:pager:` option will be used to determine the tool
 
 `:matching:` can be "partial", "beginswith", "fuzzy" or "exact" (see below).
 
-If `:include_upstream:` is true, build note files in parent directories will be included in addition to the current directory. Priority goes from current directory to root in descending order, so the current directory is top priority, and a build notes file in / is the lowest. Duplicate sections being overwritten by the higher priority.
+If `:include_upstream:` is true, build note files in parent directories will be included in addition to the current directory. Priority goes from current directory to root in descending order, so the current directory is top priority, and a build notes file in / is the lowest. Higher priority topics  will not be overwritten by a duplicate topic from a lower priority note.
 
 ### Matching
 
