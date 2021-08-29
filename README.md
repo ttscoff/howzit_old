@@ -139,6 +139,8 @@ You can create templates to reuse topics in multiple build note files. Create fi
     - ruby.md
     - obj-c.md
 
+> Use `howzit --templates` for a list of templates you've created, along with the topics they'll add when included. Just in case you make a bunch and can't remember what they're called or what they do. I was just planning ahead.
+
 You can then include the topics from a template in any build note file using a `template:` key at the top of the file.
 
 Howzit allows MultiMarkdown-style metadata at the top of a build notes file. These are key/value pairs separated by a colon:
@@ -146,6 +148,8 @@ Howzit allows MultiMarkdown-style metadata at the top of a build notes file. The
     template: markdown
     key 1: value 1
     key 2: value 2
+
+The template key can include multiple template names separated by commas.
 
 Additional metadata keys populate variables you can then use inside of your templates (and build notes), using `[%key]`. You can define a default value for a placeholder with `[%key:default]`.
 
@@ -325,6 +329,10 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 ## Changelog
 
 <!--BEGIN CHANGELOG-->
+
+### 1.1.20
+
+- Template functionality for including common tasks/topics
 
 ### 1.1.19
 

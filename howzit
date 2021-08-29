@@ -7,7 +7,7 @@
 # |_||_\___/\_/\_//__|_|\__| (_|_|_)  (_)  |
 #----<https://github.com/ttscoff/howzit>---/
 
-VERSION = '1.1.19'
+VERSION = '1.1.20'
 
 require 'optparse'
 require 'shellwords'
@@ -799,6 +799,21 @@ module BuildNotes
         opts.on('--title-only', 'Output title only') do
           @options[:output_title] = true
           @options[:title_only] = true
+        end
+
+        opts.on('--templates', 'List available templates') do
+          Dir.chdir(template_folder)
+          Dir.glob('*.md').each do |file|
+            template = File.basename(file, '.md')
+            puts "\e[7;30;45mtemplate: \e[7;33;40m#{template}\e[0m"
+            puts "\e[1;30m[\e[1;37m+\e[1;30m]──────────────────────────────────────────┐\e[0m"
+            topics = read_help_file(file)
+            topics.keys.each do |topic|
+              puts " \e[1;30m│\e[1;37m-\e[0m \e[1;36;40m#{template}:#{topic.sub(/^.*?:/, '')}\e[0m"
+            end
+            puts " \e[1;30m└───────────────────────────────────────────┘\e[0m"
+          end
+          Process.exit 0
         end
 
         opts.on('--[no-]color', 'Colorize output (default on)') do |c|
