@@ -153,7 +153,7 @@ module BuildNotes
         if hl.available?
           @options[:highlighter]
         else
-          warn 'Specified highlighter not found, switching to auto'
+          warn 'Specified highlighter not found, switching to auto' if @options[:log_level] < 2
           @options[:highlighter] = 'auto'
           which_highlighter
         end
@@ -189,7 +189,7 @@ module BuildNotes
         if pg.available?
           @options[:pager]
         else
-          warn 'Specified pager not found, switching to auto'
+          warn 'Specified pager not found, switching to auto' if @options[:log_level] < 2
           @options[:pager] = 'auto'
           which_pager
         end
@@ -251,7 +251,7 @@ module BuildNotes
       if options[:paginate]
         page(output)
       else
-        output.gsub!(/^╌/, '\e]1337;SetMark\a╌') if ENV['TERM_PROGRAM'] =~ /^iTerm/
+        output.gsub!(/^╌/, '\e]1337;SetMark\a╌') if ENV['TERM_PROGRAM'] =~ /^iTerm/ && !options[:run]
         puts output
       end
     end
@@ -378,17 +378,17 @@ module BuildNotes
       out = "\e[1;32mOpening \e[3;37m#{command}"
       case os
       when /darwin.*/i
-        warn "#{out} (macOS)\e[0m"
+        warn "#{out} (macOS)\e[0m" if @options[:log_level] < 2
         `open #{Shellwords.escape(command)}`
       when /mingw|mswin/i
-        warn "#{out} (Windows)\e[0m"
+        warn "#{out} (Windows)\e[0m" if @options[:log_level] < 2
         `start #{Shellwords.escape(command)}`
       else
         if 'xdg-open'.available?
-          warn "#{out} (Linux)\e[0m"
+          warn "#{out} (Linux)\e[0m" if @options[:log_level] < 2
           `xdg-open #{Shellwords.escape(command)}`
         else
-          warn out
+          warn out if @options[:log_level] < 2
           warn 'Unable to determine executable for `open`.'
         end
       end
@@ -405,7 +405,7 @@ module BuildNotes
         directives.each do |c|
           if c[0].nil?
             title = c[3] ? c[3].strip : ''
-            warn "\e[1;32mRunning block \e[3;37m#{title}\e[0m"
+            warn "\e[1;32mRunning block \e[3;37m#{title}\e[0m" if @options[:log_level] < 2
             block = c[4].strip
             script = Tempfile.new('howzit_script')
             begin
@@ -426,15 +426,15 @@ module BuildNotes
               if matches.empty?
                 warn "No topic match for @include(#{search})"
               else
-                warn "\e[1;33mIncluding tasks from \e[3;37m#{matches[0]}\e[0m"
+                warn "\e[1;33mIncluding tasks from \e[3;37m#{matches[0]}\e[0m" if @options[:log_level] < 2
                 process_topic(matches[0], true)
-                warn "\e[1;33mEnd include \e[3;37m#{matches[0]}\e[0m"
+                warn "\e[1;33mEnd include \e[3;37m#{matches[0]}\e[0m" if @options[:log_level] < 2
               end
             when /run/i
-              warn "\e[1;32mRunning \e[3;37m#{obj}\e[0m"
+              warn "\e[1;32mRunning \e[3;37m#{obj}\e[0m" if @options[:log_level] < 2
               system(obj)
             when /copy/i
-              warn "\e[1;32mCopied \e[3;37m#{obj}\e[1;32m to clipboard\e[0m"
+              warn "\e[1;32mCopied \e[3;37m#{obj}\e[1;32m to clipboard\e[0m" if @options[:log_level] < 2
               `echo #{Shellwords.escape(obj)}'\\c'|pbcopy`
             when /open|url/i
               os_open(obj)
@@ -444,7 +444,7 @@ module BuildNotes
       else
         warn "\e[0;31m--run: No \e[1;31m@directive\e[0;31;40m found in \e[1;37m#{key}\e[0m"
       end
-      output.push("Ran #{tasks} #{tasks == 1 ? 'task' : 'tasks'}")
+      output.push("Ran #{tasks} #{tasks == 1 ? 'task' : 'tasks'}") if @options[:log_level] < 2
     end
 
     # Output a topic with fancy title and bright white text.
@@ -508,7 +508,7 @@ module BuildNotes
                else
                  output_topic(key, {single: single})
                end
-      output.join("\n")
+      output.nil? ? '' : output.join("\n")
     end
 
     # Output a list of topic titles
@@ -706,7 +706,9 @@ module BuildNotes
         list_runnable: false,
         list_runnable_titles: false,
         title_only: false,
-        choose: false
+        choose: false,
+        quiet: false,
+        verbose: false
       }
 
       defaults = {
@@ -719,7 +721,8 @@ module BuildNotes
         pager: 'auto',
         matching: 'partial', # exact, partial, fuzzy, beginswith
         show_all_on_error: false,
-        include_upstream: false
+        include_upstream: false,
+        log_level: 1 # 0: debug, 1: info, 2: warn, 3: error
       }
 
       @metadata = {}
@@ -780,6 +783,14 @@ module BuildNotes
 
         opts.on('-t', '--title', 'Output title with build notes') do
           @options[:output_title] = true
+        end
+
+        opts.on('-q', '--quiet', 'Silence info message') do
+          @options[:log_level] = 3
+        end
+
+        opts.on('-v', '--verbose', 'Show all messages') do
+          @options[:log_level] = 0
         end
 
         opts.on('-u', '--upstream', 'Traverse up parent directories for additional build notes') do
@@ -1062,9 +1073,9 @@ module BuildNotes
         Process.exit(0)
       end
 
-      match = nil
+      topic_match = nil
       if @options[:choose]
-        match = choose(topics.keys)
+        topic_match = choose(topics.keys)
       # If there are arguments use those to search for a matching topic
       elsif !args.empty?
 
@@ -1078,15 +1089,15 @@ module BuildNotes
             Process.exit 1
           end
         elsif matches.length == 1
-          match = matches[0]
+          topic_match = matches[0]
         else
-          match = choose(matches)
+          topic_match = choose(matches)
         end
       end
 
-      if match
+      if topic_match
         # If we found a match
-        output.push(process_topic(match, @options[:run], true))
+        output.push(process_topic(topic_match, @options[:run], true))
       else
         # If there's no argument or no match found, output all
         topics.each_key { |k| output.push(process_topic(k, false, false)) }
