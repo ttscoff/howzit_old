@@ -204,16 +204,20 @@ Other options:
         -e, --edit                       Edit buildnotes file in current working directory using editor.sh
         -L, --list-completions           List topics for completion
         -l, --list                       List available topics
-        -m, --matching TYPE              Topic matching: exact, partial (default), beginswith, or fuzzy
+        -m, --matching TYPE              Topics matching type
+                                         (partial, exact, fuzzy, beginswith)
         -R, --list-runnable              List topics containing @ directives (verbose)
         -r, --run                        Execute @run, @open, and/or @copy commands for given topic
         -s, --select                     Select topic from menu
         -T, --task-list                  List topics containing @ directives (completion-compatible)
         -t, --title                      Output title with build notes
+        -q, --quiet                      Silence info message
+            --verbose                    Show all messages
         -u, --upstream                   Traverse up parent directories for additional build notes
         -w, --wrap COLUMNS               Wrap to specified width (default 80, 0 to disable)
             --edit-config                Edit configuration file using editor.sh
             --title-only                 Output title only
+            --templates                  List available templates
             --[no-]color                 Colorize output (default on)
             --[no-]md-highlight          Highlight Markdown syntax (default on), requires mdless or mdcat
             --[no-]pager                 Paginate output (default on)
@@ -234,6 +238,7 @@ Some of the command line options can be set as defaults. The first time you run 
     :pager: auto
     :matching: partial
     :include_upstream: false
+    :log_level: 1
 
 If `:color:` is false, output will not be colored, and markdown highlighting will be bypassed.
 
@@ -246,6 +251,8 @@ If `:paginate:` is true, the `:pager:` option will be used to determine the tool
 `:matching:` can be "partial", "beginswith", "fuzzy" or "exact" (see below).
 
 If `:include_upstream:` is true, build note files in parent directories will be included in addition to the current directory. Priority goes from current directory to root in descending order, so the current directory is top priority, and a build notes file in / is the lowest. Higher priority topics  will not be overwritten by a duplicate topic from a lower priority note.
+
+Set `:log_level:` to 0 for debug messages, or 3 to suppress superfluous info messages.
 
 ### Matching
 
