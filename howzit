@@ -7,7 +7,7 @@
 # |_||_\___/\_/\_//__|_|\__| (_|_|_)  (_)  |
 #----<https://github.com/ttscoff/howzit>---/
 
-VERSION = '1.1.22'
+VERSION = '1.1.23'
 
 require 'optparse'
 require 'shellwords'
@@ -17,6 +17,7 @@ require 'yaml'
 
 CONFIG_DIR = '~/.config/howzit'
 CONFIG_FILE = 'howzit.yaml'
+IGNORE_FILE = 'ignore.yaml'
 MATCHING_OPTIONS = %w[partial exact fuzzy beginswith].freeze
 
 module BuildNotes
@@ -172,12 +173,12 @@ module BuildNotes
         pg = pagers.first
         args = case pg
                when /^(less|more)$/
-                 '-r'
+                 '-Xr'
                when 'bat'
                  if @options[:highlight]
-                   '--language Markdown --style plain'
+                   '--language Markdown --style plain --pager="less -Xr"'
                  else
-                   '--style plain'
+                   '--style plain --pager="less -Xr"'
                  end
                else
                  ''
@@ -898,12 +899,38 @@ module BuildNotes
       buildnotes.reverse
     end
 
+    def is_build_notes(filename)
+      return false if filename.downcase !~ /(^howzit[^.]*|build[^.]+)/
+      return false if should_ignore(filename)
+      true
+    end
+
+    def should_ignore(filename)
+      return false unless File.exist?(ignore_file)
+
+      unless @ignore_patterns
+        @ignore_patterns = YAML.load(IO.read(ignore_file))
+      end
+
+      ignore = false
+
+      @ignore_patterns.each do |pat|
+        if filename =~ /#{pat}/
+          ignore = true
+          break
+        end
+      end
+
+      ignore
+    end
+
     def glob_note
       filename = nil
       # Check for a build note file in the current folder. Filename must start
       # with "build" and have an extension of txt, md, or markdown.
+
       Dir.glob('*.{txt,md,markdown}').each do |f|
-        if f.downcase =~ /^(build[^.]*|howzit[^.]*)/
+        if is_build_notes(f)
           filename = f
           break
         end
@@ -929,7 +956,7 @@ module BuildNotes
       end
 
       @note_file = File.expand_path(filename)
-      return @note_file
+      @note_file
     end
 
     def options_list(matches)
@@ -979,6 +1006,10 @@ module BuildNotes
 
     def config_file
       File.join(config_dir, CONFIG_FILE)
+    end
+
+    def ignore_file
+      File.join(config_dir, IGNORE_FILE)
     end
 
     def template_folder

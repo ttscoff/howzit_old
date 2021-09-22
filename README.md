@@ -337,6 +337,10 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 
 <!--BEGIN CHANGELOG-->
 
+### 1.1.23
+
+- Add flags to allow content to stay onscreen after exiting pager (less and bat)
+
 ### 1.1.21
 
 - Merge directive and block handling so execution order is sequential
