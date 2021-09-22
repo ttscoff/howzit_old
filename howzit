@@ -7,7 +7,7 @@
 # |_||_\___/\_/\_//__|_|\__| (_|_|_)  (_)  |
 #----<https://github.com/ttscoff/howzit>---/
 
-VERSION = '1.1.23'
+VERSION = '1.1.24'
 
 require 'optparse'
 require 'shellwords'
@@ -116,6 +116,23 @@ module BuildNotes
 
     def render_template!(vars)
       replace render_template(vars)
+    end
+
+    def extract_metadata
+      if File.exist?(self)
+        leader = IO.read(self).split(/^#/)[0].strip
+        leader.length > 0 ? leader.get_metadata : {}
+      else
+        {}
+      end
+    end
+
+    def get_metadata
+      data = {}
+      scan(/(?mi)^(\S[\s\S]+?): ([\s\S]*?)(?=\n\S[\s\S]*?:|\Z)/).each do |m|
+        data[m[0].strip.downcase] = m[1]
+      end
+      data
     end
   end
 end
@@ -583,16 +600,30 @@ module BuildNotes
       topics_dict
     end
 
+    def ensure_requirements(template)
+      t_leader = IO.read(template).split(/^#/)[0].strip
+      if t_leader.length > 0
+        t_meta = t_leader.get_metadata
+        if t_meta.key?('required')
+          required = t_meta['required'].strip.split(/\s*,\s*/)
+          required.each do |req|
+            unless @metadata.keys.include?(req.downcase)
+              warn %(\e[0;31mERROR: Missing required metadata key from template '\e[1;37m#{File.basename(template, '.md')}\e[0;31m'\e[0m)
+              warn %(\e[0;31mPlease define \e[1;33m#{req.downcase}\e[0;31m in build notes\e[0m)
+              Process.exit 1
+            end
+          end
+        end
+      end
+    end
+
     def get_template_topics(content)
       leader = content.split(/^#/)[0].strip
 
       template_topics = {}
       if leader.length > 0
-        data = {}
-        leader.scan(/(?mi)^(\S[\s\S]+?): ([\s\S]*?)(?=\n\S[\s\S]*?:|\Z)/).each do |m|
-          data[m[0].strip.downcase] = m[1]
-          @metadata = @metadata.merge(data)
-        end
+        data = leader.get_metadata
+        @metadata = @metadata.merge(data)
 
         if data.key?('template')
           templates = data['template'].strip.split(/\s*,\s*/)
@@ -606,6 +637,8 @@ module BuildNotes
             t_file = t.sub(/(\.md)?$/, '.md')
             template = File.join(template_folder, t_file)
             if File.exist?(template)
+              ensure_requirements(template)
+
               t_topics = read_help_file(template)
               if tasks
                 tasks.each do |task|
@@ -817,10 +850,18 @@ module BuildNotes
           Dir.glob('*.md').each do |file|
             template = File.basename(file, '.md')
             puts "\e[7;30;45mtemplate: \e[7;33;40m#{template}\e[0m"
-            puts "\e[1;30m[\e[1;37m+\e[1;30m]──────────────────────────────────────────┐\e[0m"
+            puts "\e[1;30m[\e[1;37mtasks\e[1;30m]──────────────────────────────────────┐\e[0m"
+            metadata = file.extract_metadata
             topics = read_help_file(file)
             topics.keys.each do |topic|
               puts " \e[1;30m│\e[1;37m-\e[0m \e[1;36;40m#{template}:#{topic.sub(/^.*?:/, '')}\e[0m"
+            end
+            if metadata.size > 0
+              meta = []
+              meta << metadata['required'].split(/\s*,\s*/).map {|m| "*\e[1;37m#{m}\e[0;37m" } if metadata.key?('required')
+              meta << metadata['optional'].split(/\s*,\s*/).map {|m| "#{m}" } if metadata.key?('optional')
+              puts "\e[1;30m[\e[1;34mmeta\e[1;30m]───────────────────────────────────────┤\e[0m"
+              puts " \e[1;30m│\e[1;37m \e[0;37m#{meta.join(", ")}\e[0m"
             end
             puts " \e[1;30m└───────────────────────────────────────────┘\e[0m"
           end

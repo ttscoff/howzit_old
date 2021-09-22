@@ -47,6 +47,8 @@ Howzit relies on there being a file in the current directory with a name that st
 
 > Tip: Add "buildprivate.md" to your global gitignore (`git config --get core.excludesfile`). In a project where you don't want to share your build notes, just name the file "buildprivate.md" instead of "buildnotes.md" and it will automatically be ignored.
 
+If there are files that match the "build*" pattern that should not be recognized as build notes by howzit, add them to `~/.config/howzit/ignore.yaml`. This file is a simple list of patterns that should be ignored when scanning for build note files. Use `(?:i)` at the beginning of a pattern to make it case insensitive.
+
 The topics of the notes are delineated by Markdown headings, level 2 or higher, with the heading being the title of the topic. I split all of mine apart with h2s. For example, a short one from the little website I was working on yesterday:
 
     ## Build
@@ -178,6 +180,14 @@ Then, in a `buildnotes.md` file in your project, you could include at the top of
 If you only want to include certain topics from a template file, use the format `template_name[topic]` or include multiple topics separated by commas: `template_name[topic 1, topic 2]`. You can also use `*` as a wildcard, where `template_name[build*]` would include topics "Build" and "Build and Run".
 
 If a topic in the current project's build note has an identical name to a template topic, the local topic takes precedence. This allows you to include a template but modify just a part of it by duplicating the topic title.
+
+Templates can include other templates with a `template:` key at the top of the template.
+
+You can define what metadata keys are required for the template using a `required:` key at the top of the template. For example, if the template `script.md` uses a placeholder `[%executable]` that can't have a default value as it's specific to each project, you can add:
+
+    required: executable 
+
+at the top of `project.md`. If the template is included in a build notes file and the `executable:` key is not defined, an error will be shown.
 
 ## Using howzit
 

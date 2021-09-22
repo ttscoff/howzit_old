@@ -1,3 +1,9 @@
+### 1.1.24
+
+- Use ~/.config/howzit/ignore.yaml to ignore patterns when scanning for build notes
+- Use `required` and `optional` keys in templates to request that metadata be defined when importing
+- Allow templates to include other templates
+
 ### 1.1.23
 
 - Add flags to allow content to stay onscreen after exiting pager (less and bat)
