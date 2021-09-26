@@ -1,3 +1,10 @@
+### 1.1.25
+
+- Hide run block contents by default
+- :show_all_code: config setting to include run block contents
+- --show-code flag to display run block contents at runtime
+- Modify include display
+
 ### 1.1.24
 
 - Use ~/.config/howzit/ignore.yaml to ignore patterns when scanning for build notes

@@ -4,7 +4,7 @@ A command-line reference tool for tracking project build systems
 
 Howzit is a tool that allows you to keep Markdown-formatted notes about a project's tools and procedures. It functions as an easy lookup for notes about a particular task, as well as a task runner to automatically execute appropriate commands.
 
-<!--BEGIN PROJECT-->
+<!--README-->
 
 ## Features
 
@@ -341,5 +341,5 @@ There are a few projects that tackle the same concept (a Markdown makefile). Mos
 
 This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
 
-<!--END PROJECT-->
+<!--END README-->
 

@@ -7,7 +7,7 @@
 # |_||_\___/\_/\_//__|_|\__| (_|_|_)  (_)  |
 #----<https://github.com/ttscoff/howzit>---/
 
-VERSION = '1.1.24'
+VERSION = '1.1.25'
 
 require 'optparse'
 require 'shellwords'
@@ -379,14 +379,15 @@ module BuildNotes
     def format_header(title, opts = {})
       options = {
         hr: "\u{254C}",
-        color: '1;32'
+        color: '1;32',
+        border: '0'
       }
 
       options.merge!(opts)
 
       cols = `tput cols`.strip.to_i
       cols = @options[:wrap] if (@options[:wrap]).positive? && cols > @options[:wrap]
-      title = "#{options[:hr]}#{options[:hr]}( \e[#{options[:color]}m#{title}\e[0m )"
+      title = "\e[#{options[:border]}m#{options[:hr]}#{options[:hr]}( \e[#{options[:color]}m#{title}\e[#{options[:border]}m )"
       tail = options[:hr] * (cols - title.uncolor.length)
       "#{title}#{tail}"
     end
@@ -475,16 +476,27 @@ module BuildNotes
         output.push(format_header(key))
         output.push('')
       end
-      topics[key].strip.split(/\n/).each do |l|
+      topic = topics[key].strip
+      topic.gsub!(/(?mi)^(`{3,})run *([^\n]*)[\s\S]*?\n\1\s*$/, '@@@run \2') unless @options[:show_all_code]
+      topic.split(/\n/).each do |l|
         case l
         when /@include\((.*?)\)/
           m = Regexp.last_match
           matches = match_topic(m[1])
           unless matches.empty?
-            output.push(format_header("Include #{matches[0]}", {color:"33;40", hr: '.'}))
+            if opt[:single]
+              title = "From #{matches[0]}:"
+              color = '33;40'
+              rule = '30;40'
+            else
+              title = "Include #{matches[0]}"
+              color = '33;40'
+              rule = '0'
+            end
+            output.push(format_header("#{title}", { color: color, hr: '.', border: rule }))
             if opt[:single]
               output.concat(output_topic(matches[0], {single: true, header: false}))
-              output.push(format_header("End include #{matches[0]}", {color:"33;40", hr: '.'}))
+              output.push(format_header("...", { color: color, hr: '.', border: rule }))
             end
           end
         when /@(run|copy|open|url|include)\((.*?)\)/
@@ -500,8 +512,14 @@ module BuildNotes
                    "\u{279A}"
                  end
           output.push("\e[1;35;40m#{icon} \e[3;37;40m#{obj}\e[0m")
-        when /(`{3,})run/i
-          output.push("\e[1;35;40m\u{25B6} \e[3;37;40mCode Block\e[0m\n```")
+        when /(`{3,})run *(.*?)$/i
+          m = Regexp.last_match
+          desc = m[2].length.positive? ? "Block: #{m[2]}" : 'Code Block'
+          output.push("\e[1;35;40m\u{25B6} \e[3;37;40m#{desc}\e[0m\n```")
+        when /@@@run *(.*?)$/i
+          m = Regexp.last_match
+          desc = m[1].length.positive? ? "Block: #{m[1]}" : 'Code Block'
+          output.push("\e[1;35;40m\u{25B6} \e[3;37;40m#{desc}\e[0m")
         else
           l.wrap!(@options[:wrap]) if (@options[:wrap]).positive?
           output.push(l)
@@ -756,6 +774,7 @@ module BuildNotes
         matching: 'partial', # exact, partial, fuzzy, beginswith
         show_all_on_error: false,
         include_upstream: false,
+        show_all_code: false,
         log_level: 1 # 0: debug, 1: info, 2: warn, 3: error
       }
 
@@ -778,6 +797,10 @@ module BuildNotes
         opts.on('-c', '--create', 'Create a skeleton build note in the current working directory') do
           create_note
           Process.exit 0
+        end
+
+        opts.on('--show-code', 'Display the content of fenced run blocks') do
+          @options[:show_all_code] = true
         end
 
         opts.on('-e', '--edit', "Edit buildnotes file in current working directory using #{File.basename(ENV['EDITOR'])}") do
