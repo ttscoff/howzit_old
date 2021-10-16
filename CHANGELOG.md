@@ -1,3 +1,7 @@
+### 1.1.26
+
+- Fix for error in interactive build notes creation
+
 ### 1.1.25
 
 - Hide run block contents by default

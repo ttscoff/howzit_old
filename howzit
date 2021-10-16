@@ -7,7 +7,7 @@
 # |_||_\___/\_/\_//__|_|\__| (_|_|_)  (_)  |
 #----<https://github.com/ttscoff/howzit>---/
 
-VERSION = '1.1.25'
+VERSION = '1.1.26'
 
 require 'optparse'
 require 'shellwords'
@@ -313,18 +313,18 @@ module BuildNotes
 
       title = File.basename(Dir.pwd)
       printf "\e[1;37mProject name \e[0;32m[#{title}]\e[1;37m: \e[0m"
-      input = gets.chomp
+      input = STDIN.gets.chomp
       title = input unless input.empty?
 
       summary = ''
       printf "\e[1;37mProject summary: \e[0m"
-      input = gets.chomp
+      input = STDIN.gets.chomp
       summary = input unless input.empty?
 
-      ext = 'md'
-      printf "\e[1;37mChoose build notes file extension \e[0;32m[md]\e[1;37m: \e[0m"
-      input = gets.chomp
-      ext = input unless input.empty?
+      note_file = 'buildnotes.md'
+      printf "\e[1;37mBuild notes filename (must begin with 'howzit' or 'build')\n\e[0;32m[#{note_file}]\e[1;37m: \e[0m"
+      input = STDIN.gets.chomp
+      note_file = input unless input.empty?
 
       note = <<~EOBUILDNOTES
         # #{title}
@@ -350,8 +350,6 @@ module BuildNotes
         Version control notes, additional gulp/rake/make/etc tasks...
 
       EOBUILDNOTES
-
-      note_file = "buildnotes.#{ext}"
 
       if File.exist?(note_file)
         system 'stty cbreak'
