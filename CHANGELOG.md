@@ -1,3 +1,13 @@
+### 1.1.27
+
+2022-01-17 11:45
+
+#### NEW
+
+- Use fzf for menus if available
+- "@run() TITLE" will show TITLE instead of command when listing runnable topics
+- @include(FILENAME) will import an external file if the path exists
+
 ### 1.1.26
 
 - Fix for error in interactive build notes creation
