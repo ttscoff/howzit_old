@@ -11,6 +11,7 @@ VERSION = '1.1.26'
 
 require 'optparse'
 require 'shellwords'
+require 'pathname'
 require 'readline'
 require 'tempfile'
 require 'yaml'
@@ -592,11 +593,18 @@ module BuildNotes
         lines = sect.split(/\n/)
         lines.each do |l|
           case l
-          when /@(run|copy|open|url)\((.*?)\)/
+          when /@run\((.*?)\)(.*)?/
+            m = Regexp.last_match
+            run = m[2].strip.length.positive? ? m[2].strip : m[1]
+            s_out.push("    * run: #{run.gsub(/\\n/, '\​n')}")
+          when /@(copy|open|url)\((.*?)\)/
             m = Regexp.last_match
             s_out.push("    * #{m[1]}: #{m[2]}")
-          when /`{3,}run/m
-            s_out.push('    * run code block')
+          when /`{3,}run(.*)?/m
+            run = '    * run code block'
+            title = Regexp.last_match(1).strip
+            run += " (#{title})" if title.length.positive?
+            s_out.push(run)
           end
         end
         unless s_out.empty?
@@ -679,6 +687,25 @@ module BuildNotes
       filename = path.nil? ? find_note_file : path
       topics_dict = {}
       help = IO.read(filename)
+
+      help.gsub!(/@include\((.*?)\)/) do
+        m = Regexp.last_match
+        file = File.expand_path(m[1])
+        if File.exist?(file)
+          content = IO.read(file)
+          home = ENV['HOME']
+          short_path = File.dirname(file.sub(/^#{home}/, '~'))
+          prefix = "#{short_path}:"
+          parts = content.split(/^##+/)
+          parts.shift
+          content = '## ' + parts.join('## ')
+          content.gsub!(/^(##+ *)(?=\S)/, "\\1#{prefix}")
+          content
+        else
+          m[0]
+        end
+      end
+
       template_topics = get_template_topics(help)
 
       split = help.split(/^##+/)
@@ -689,7 +716,6 @@ module BuildNotes
         lines = sect.split(/\n/)
         title = lines.slice!(0).strip
         prefix = ''
-        t_title = ''
         if path
           if path =~ /#{template_folder}/
             short_path = File.basename(path, '.md')
@@ -1031,7 +1057,30 @@ module BuildNotes
       puts
     end
 
+    def command_exist?(command)
+      exts = ENV.fetch("PATHEXT", "").split(::File::PATH_SEPARATOR)
+      if Pathname.new(command).absolute?
+        ::File.exist?(command) ||
+          exts.any? { |ext| ::File.exist?("#{command}#{ext}")}
+      else
+        ENV.fetch("PATH", "").split(::File::PATH_SEPARATOR).any? do |dir|
+          file = ::File.join(dir, command)
+          ::File.exist?(file) ||
+            exts.any? { |ext| ::File.exist?("#{file}#{ext}") }
+        end
+      end
+    end
+
     def choose(matches)
+      if command_exist?('fzf')
+        res = `echo #{Shellwords.escape(matches.join("\n"))} | fzf -0 -1 --height #{matches.count + 2} --prompt 'Select a section > '`.strip
+        if res.nil? || res.empty?
+          warn 'Cancelled'
+          Process.exit 0
+        end
+        return res
+      end
+
       res = matches[0..9]
       stty_save = `stty -g`.chomp
 
