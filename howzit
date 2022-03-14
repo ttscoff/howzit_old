@@ -564,10 +564,14 @@ module BuildNotes
     def get_note_title(filename, truncate = 0)
       title = nil
       help = IO.read(filename).strip
-      first_line = help.split(/\n/)[0]
-      title = first_line.sub(/^#\s*/, '') if !first_line.empty? && first_line !~ /^##+/
-      title.trunc!(truncate) if title && truncate.positive?
-      title || 'Notes'
+      title = help.match(/(?:^(\S.*?)(?=\n==)|^# ?(.*?)$)/)
+      title = if title
+                title[1].nil? ? title[2] : title[1]
+              else
+               filename.sub(/(\.\w+)?$/, '')
+             end
+
+      title && truncate.positive? ? title.trunc(truncate) : title
     end
 
     def list_runnable_titles
