@@ -133,8 +133,24 @@ module BuildNotes
       scan(/(?mi)^(\S[\s\S]+?): ([\s\S]*?)(?=\n\S[\s\S]*?:|\Z)/).each do |m|
         data[m[0].strip.downcase] = m[1]
       end
+      normalize_metadata(data)
+    end
+
+    def normalize_metadata(meta)
+      data = {}
+      meta.each do |k, v|
+        case k
+        when /^templ\w+$/
+          data['template'] = v
+        when /^req\w+$/
+          data['required'] = v
+        else
+          data[k] = v
+        end
+      end
       data
     end
+
   end
 end
 
