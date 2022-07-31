@@ -7,7 +7,7 @@
 # |_||_\___/\_/\_//__|_|\__| (_|_|_)  (_)  |
 #----<https://github.com/ttscoff/howzit>---/
 
-VERSION = '1.2.0'
+VERSION = '1.2.1'
 
 require 'optparse'
 require 'shellwords'
@@ -205,6 +205,8 @@ module BuildNotes
 
         pg = pagers.first
         args = case pg
+               when 'delta'
+                '--pager="less -Xr"'
                when /^(less|more)$/
                  '-Xr'
                when 'bat'

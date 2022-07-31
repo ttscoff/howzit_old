@@ -1,3 +1,9 @@
+### 1.2.1
+
+2022-07-31 05:12
+
+- Add handling for delta pager to not clear screen on exit
+
 ### 1.2.0
 
 2022-07-31 04:59
