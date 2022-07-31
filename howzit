@@ -1,4 +1,4 @@
-#!/usr/bin/env ruby
+#!/usr/bin/env ruby -W1
 
 #------------------------------------------\
 #  _                  _ _             ___  |
@@ -312,10 +312,9 @@ module BuildNotes
         exit!
       end
       # First make sure there isn't already a buildnotes file
-      filename = find_note_file
-      if filename
+      if note_file
         system 'stty cbreak'
-        fname = "\e[1;33m#{filename}\e[1;37m"
+        fname = "\e[1;33m#{note_file}\e[1;37m"
         yn = color_single_options(%w[y N])
         $stdout.syswrite "#{fname} exists and appears to be a build note, continue anyway #{yn}\e[1;37m? \e[0m"
         res = $stdin.sysread 1
@@ -339,10 +338,10 @@ module BuildNotes
       input = STDIN.gets.chomp
       summary = input unless input.empty?
 
-      note_file = 'buildnotes.md'
-      printf "\e[1;37mBuild notes filename (must begin with 'howzit' or 'build')\n\e[0;32m[#{note_file}]\e[1;37m: \e[0m"
+      filename = 'buildnotes.md'
+      printf "\e[1;37mBuild notes filename (must begin with 'howzit' or 'build')\n\e[0;32m[#{filename}]\e[1;37m: \e[0m"
       input = STDIN.gets.chomp
-      note_file = input unless input.empty?
+      filename = input unless input.empty?
 
       note = <<~EOBUILDNOTES
         # #{title}
@@ -369,7 +368,7 @@ module BuildNotes
 
       EOBUILDNOTES
 
-      if File.exist?(note_file)
+      if File.exist?(filename)
         system 'stty cbreak'
         yn = color_single_options(%w[y N])
         file = "\e[1;33m#{filename}"
@@ -385,9 +384,9 @@ module BuildNotes
         end
       end
 
-      File.open(note_file, 'w') do |f|
+      File.open(filename, 'w') do |f|
         f.puts note
-        puts "Build notes for #{title} written to #{note_file}"
+        puts "Build notes for #{title} written to #{filename}"
       end
     end
 
@@ -405,7 +404,7 @@ module BuildNotes
       cols = @options[:wrap] if (@options[:wrap]).positive? && cols > @options[:wrap]
       title = "\e[#{options[:border]}m#{options[:hr]}#{options[:hr]}( \e[#{options[:color]}m#{title}\e[#{options[:border]}m )"
       tail = options[:hr] * (cols - title.uncolor.length)
-      "#{title}#{tail}"
+      "#{title}#{tail}\e[0m"
     end
 
     def os_open(command)
@@ -471,9 +470,13 @@ module BuildNotes
               if matches.empty?
                 warn "No topic match for @include(#{search})"
               else
-                warn "\e[1;33mIncluding tasks from \e[3;37m#{matches[0]}\e[0m" if @options[:log_level] < 2
-                process_topic(matches[0], true)
-                warn "\e[1;33mEnd include \e[3;37m#{matches[0]}\e[0m" if @options[:log_level] < 2
+                if @included.include?(matches[0])
+                  warn "\e[1;33mTasks from \e[3;37m#{matches[0]} already included, skipping\e[0m" if @options[:log_level] < 2
+                else
+                  warn "\e[1;33mIncluding tasks from \e[3;37m#{matches[0]}\e[0m" if @options[:log_level] < 2
+                  process_topic(matches[0], true)
+                  warn "\e[1;33mEnd include \e[3;37m#{matches[0]}\e[0m" if @options[:log_level] < 2
+                end
               end
             when /run/i
               warn "\e[1;32mRunning \e[3;37m#{obj}\e[0m" if @options[:log_level] < 2
@@ -507,6 +510,7 @@ module BuildNotes
       topic.split(/\n/).each do |l|
         case l
         when /@include\((.*?)\)/
+
           m = Regexp.last_match
           matches = match_topic(m[1])
           unless matches.empty?
@@ -519,12 +523,21 @@ module BuildNotes
               color = '33;40'
               rule = '0'
             end
-            output.push(format_header("#{title}", { color: color, hr: '.', border: rule }))
+            output.push(format_header("#{'> ' * @nest_level}#{title}", { color: color, hr: '.', border: rule })) unless @included.include?(matches[0])
+
             if opt[:single]
-              output.concat(output_topic(matches[0], {single: true, header: false}))
-              output.push(format_header("...", { color: color, hr: '.', border: rule }))
+              if @included.include?(matches[0])
+                output.push(format_header("#{'> ' * @nest_level}#{title} included above", { color: color, hr: '.', border: rule }))
+              else
+                @nest_level += 1
+                output.concat(output_topic(matches[0], {single: true, header: false}))
+                @nest_level -= 1
+              end
+              output.push(format_header("#{'> ' * @nest_level}...", { color: color, hr: '.', border: rule })) unless @included.include?(matches[0])
             end
+            @included.push(matches[0])
           end
+
         when /@(run|copy|open|url|include)\((.*?)\)/
           m = Regexp.last_match
           cmd = m[1]
@@ -715,7 +728,7 @@ module BuildNotes
 
     # Read in the build notes file and output a hash of "Title" => contents
     def read_help_file(path = nil)
-      filename = path.nil? ? find_note_file : path
+      filename = path.nil? ? note_file : path
       topics_dict = {}
       help = IO.read(filename)
 
@@ -835,6 +848,8 @@ module BuildNotes
       }
 
       @metadata = {}
+      @included = []
+      @nest_level = 0
 
       parts = Shellwords.shelljoin(args).split(/ -- /)
       args = parts[0] ? Shellwords.shellsplit(parts[0]) : []
@@ -981,8 +996,7 @@ module BuildNotes
     def edit_note
       raise 'No EDITOR variable defined in environment' if ENV['EDITOR'].nil?
 
-      filename = find_note_file
-      if filename.nil?
+      if note_file.nil?
         system 'stty cbreak'
         yn = color_single_options(%w[Y n])
         $stdout.syswrite "No build notes file found, create one #{yn}? "
@@ -993,7 +1007,7 @@ module BuildNotes
         create_note if res.chomp =~ /^y?$/i
         edit_note
       else
-        `#{ENV['EDITOR']} "#{filename}"`
+        `#{ENV['EDITOR']} "#{note_file}"`
       end
     end
 
@@ -1013,7 +1027,7 @@ module BuildNotes
         filename = glob_note
         unless filename.nil?
           note = File.join(dir, filename)
-          buildnotes.push(note) unless note == @note_file
+          buildnotes.push(note) unless note == note_file
         end
         dir = File.dirname(dir)
       end
@@ -1062,8 +1076,11 @@ module BuildNotes
       filename
     end
 
+    def note_file
+      @note_file ||= find_note_file
+    end
+
     def find_note_file
-      return @note_file if @note_file
       filename = glob_note
 
       if filename.nil? && 'git'.available?
@@ -1076,11 +1093,12 @@ module BuildNotes
 
       if filename.nil? && @options[:include_upstream]
         upstream_notes = glob_upstream
-        filename = upstream_notes[-1] if upstream_notes.length > 0
+        filename = upstream_notes[-1] unless upstream_notes.empty?
       end
 
-      @note_file = File.expand_path(filename)
-      @note_file
+      return nil if filename.nil?
+
+      File.expand_path(filename)
     end
 
     def options_list(matches)
@@ -1094,12 +1112,12 @@ module BuildNotes
     end
 
     def command_exist?(command)
-      exts = ENV.fetch("PATHEXT", "").split(::File::PATH_SEPARATOR)
+      exts = ENV.fetch('PATHEXT', '').split(::File::PATH_SEPARATOR)
       if Pathname.new(command).absolute?
         ::File.exist?(command) ||
-          exts.any? { |ext| ::File.exist?("#{command}#{ext}")}
+          exts.any? { |ext| ::File.exist?("#{command}#{ext}") }
       else
-        ENV.fetch("PATH", "").split(::File::PATH_SEPARATOR).any? do |dir|
+        ENV.fetch('PATH', '').split(::File::PATH_SEPARATOR).any? do |dir|
           file = ::File.join(dir, command)
           ::File.exist?(file) ||
             exts.any? { |ext| ::File.exist?("#{file}#{ext}") }
@@ -1198,9 +1216,8 @@ module BuildNotes
 
     def process(args)
       output = []
-      filename = find_note_file
 
-      unless filename
+      unless note_file
         Process.exit 0 if @options[:list_runnable_titles] || @options[:list_topic_titles]
 
         # clear the buffer
@@ -1219,11 +1236,11 @@ module BuildNotes
       end
 
       if @options[:title_only]
-        out = get_note_title(filename, 20)
+        out = get_note_title(note_file, 20)
         $stdout.print(out.strip)
         Process.exit(0)
       elsif @options[:output_title]
-        title = get_note_title(filename)
+        title = get_note_title(note_file)
         if title && !title.empty?
           header = format_header(title, { hr: "\u{2550}", color: '1;37;40' })
           output.push("#{header}\n")
