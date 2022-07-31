@@ -1,3 +1,9 @@
+### 1.2.2
+
+2022-07-31 08:56
+
+- Add -F option to pager setup (quit if less than one screen)
+
 ### 1.2.1
 
 2022-07-31 05:12
