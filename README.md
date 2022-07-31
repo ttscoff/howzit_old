@@ -16,6 +16,7 @@ Howzit is a tool that allows you to keep Markdown-formatted notes about a projec
 - Sets iTerm 2 marks on topic titles for navigation when paging is disabled
 - Inside of git repositories, howzit will work from subdirectories, assuming build notes are in top level of repo
 - Templates for easily including repeat tasks
+- Grep topics for pattern and choose from matches
 
 ## Getting Started
 
@@ -207,11 +208,14 @@ Use `-r` to execute any @copy, @run, or @open commands in the given topic. Optio
 
 Other options:
 
-    Usage: howzit [OPTIONS] [TOPIC]
+    Usage: /Users/ttscoff/scripts/howzit [OPTIONS] [TOPIC]
+
+    Show build notes for the current project (buildnotes.md). Include a topic name to see just that topic, or no argument to display all.
 
     Options:
         -c, --create                     Create a skeleton build note in the current working directory
         -e, --edit                       Edit buildnotes file in current working directory using editor.sh
+            --grep PATTERN               Display sections matching a search pattern
         -L, --list-completions           List topics for completion
         -l, --list                       List available topics
         -m, --matching TYPE              Topics matching type
@@ -224,6 +228,7 @@ Other options:
         -q, --quiet                      Silence info message
             --verbose                    Show all messages
         -u, --upstream                   Traverse up parent directories for additional build notes
+            --show-code                  Display the content of fenced run blocks
         -w, --wrap COLUMNS               Wrap to specified width (default 80, 0 to disable)
             --edit-config                Edit configuration file using editor.sh
             --title-only                 Output title only
@@ -233,6 +238,7 @@ Other options:
             --[no-]pager                 Paginate output (default on)
         -h, --help                       Display this screen
         -v, --version                    Display version number
+
 
 ## Configuration
 

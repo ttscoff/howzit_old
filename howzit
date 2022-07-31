@@ -7,7 +7,7 @@
 # |_||_\___/\_/\_//__|_|\__| (_|_|_)  (_)  |
 #----<https://github.com/ttscoff/howzit>---/
 
-VERSION = '1.1.27'
+VERSION = '1.2.0'
 
 require 'optparse'
 require 'shellwords'
@@ -848,22 +848,18 @@ module BuildNotes
         opts.separator ''
         opts.separator 'Options:'
 
-        opts.on('--grep PATTERN', 'Display sections matching a search pattern') do |pat|
-          @options[:grep] = pat
-        end
-
         opts.on('-c', '--create', 'Create a skeleton build note in the current working directory') do
           create_note
           Process.exit 0
         end
 
-        opts.on('--show-code', 'Display the content of fenced run blocks') do
-          @options[:show_all_code] = true
-        end
-
         opts.on('-e', '--edit', "Edit buildnotes file in current working directory using #{File.basename(ENV['EDITOR'])}") do
           edit_note
           Process.exit 0
+        end
+
+        opts.on('--grep PATTERN', 'Display sections matching a search pattern') do |pat|
+          @options[:grep] = pat
         end
 
         opts.on('-L', '--list-completions', 'List topics for completion') do
@@ -910,6 +906,10 @@ module BuildNotes
 
         opts.on('-u', '--upstream', 'Traverse up parent directories for additional build notes') do
           @options[:include_upstream] = true
+        end
+
+        opts.on('--show-code', 'Display the content of fenced run blocks') do
+          @options[:show_all_code] = true
         end
 
         opts.on('-w', '--wrap COLUMNS', 'Wrap to specified width (default 80, 0 to disable)') do |w|
