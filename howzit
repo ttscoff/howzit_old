@@ -165,7 +165,6 @@ module BuildNotes
 
     def topics
       @topics ||= read_help
-      @topics
     end
 
     # If either mdless or mdcat are installed, use that for highlighting
@@ -426,6 +425,16 @@ module BuildNotes
           warn 'Unable to determine executable for `open`.'
         end
       end
+    end
+
+    def grep_topics(pat)
+      matching_topics = []
+      topics.each do |topic, content|
+        if content =~ /#{pat}/i || topic =~ /#{pat}/i
+          matching_topics.push(topic)
+        end
+      end
+      matching_topics
     end
 
     # Handle run command, execute directives
@@ -819,6 +828,7 @@ module BuildNotes
         show_all_on_error: false,
         include_upstream: false,
         show_all_code: false,
+        grep: nil,
         log_level: 1 # 0: debug, 1: info, 2: warn, 3: error
       }
 
@@ -837,6 +847,10 @@ module BuildNotes
         opts.separator 'Show build notes for the current project (buildnotes.md). Include a topic name to see just that topic, or no argument to display all.'
         opts.separator ''
         opts.separator 'Options:'
+
+        opts.on('--grep PATTERN', 'Display sections matching a search pattern') do |pat|
+          @options[:grep] = pat
+        end
 
         opts.on('-c', '--create', 'Create a skeleton build note in the current working directory') do
           create_note
@@ -1236,7 +1250,9 @@ module BuildNotes
       end
 
       topic_match = nil
-      if @options[:choose]
+      if @options[:grep]
+        topic_match = choose(grep_topics(@options[:grep]))
+      elsif @options[:choose]
         topic_match = choose(topics.keys)
       # If there are arguments use those to search for a matching topic
       elsif !args.empty?
