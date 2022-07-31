@@ -1,3 +1,14 @@
+### 1.2.3
+
+2022-07-31 14:20
+
+#### IMPROVED
+
+- Don't include a topic multiple times in one display
+- Don't execute nested topics more than once
+- Indicate nested includes in headers
+- Code cleanup
+
 ### 1.2.2
 
 2022-07-31 08:56
