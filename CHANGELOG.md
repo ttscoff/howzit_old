@@ -1,3 +1,9 @@
+### 1.2.0
+
+2022-07-31 04:59
+
+- Add grep feature, searches topic/content for pattern and displays matches (selection menu if multiple matches)
+
 ### 1.1.27
 
 2022-01-17 11:45
