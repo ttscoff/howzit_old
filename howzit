@@ -206,14 +206,14 @@ module BuildNotes
         pg = pagers.first
         args = case pg
                when 'delta'
-                '--pager="less -Xr"'
+                 '--pager="less -FXr"'
                when /^(less|more)$/
-                 '-Xr'
+                 '-FXr'
                when 'bat'
                  if @options[:highlight]
-                   '--language Markdown --style plain --pager="less -Xr"'
+                   '--language Markdown --style plain --pager="less -FXr"'
                  else
-                   '--style plain --pager="less -Xr"'
+                   '--style plain --pager="less -FXr"'
                  end
                else
                  ''
