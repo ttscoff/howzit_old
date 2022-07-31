@@ -208,7 +208,7 @@ Use `-r` to execute any @copy, @run, or @open commands in the given topic. Optio
 
 Other options:
 
-    Usage: /Users/ttscoff/scripts/howzit [OPTIONS] [TOPIC]
+    Usage: howzit [OPTIONS] [TOPIC]
 
     Show build notes for the current project (buildnotes.md). Include a topic name to see just that topic, or no argument to display all.
 
@@ -280,7 +280,7 @@ All matching is case insensitive. This setting can be overridden by the `--match
 
     _Example:_ `howzit other` matches 'An<mark>other</mark> Topic'.
 
-- ':matching: beginswith`
+- `:matching: beginswith`
 
     Matches from the start of the title.
 
